@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../ui/alert-dialog";
+} from '../ui/alert-dialog';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -30,16 +30,16 @@ api.interceptors.request.use(
 
 const PendingOrders = () => {
   const [pendingOrders, setPendingOrders] = useState([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [priceUpdateModal, setPriceUpdateModal] = useState({
     isOpen: false,
     details: [],
-    orderId: null,
+    orderId: null
   });
   const [successDialog, setSuccessDialog] = useState({
     isOpen: false,
-    message: "",
+    message: ''
   });
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
@@ -55,42 +55,42 @@ const PendingOrders = () => {
       const response = await api.get("/reception/orders/pending");
       console.log(response.data); // Log the response to inspect the structure
       const pendingOrders = response.data.orders || [];
-
+      
       // If no orders found, try fetching from history and filter for pending status
       if (pendingOrders.length === 0) {
         try {
           const historyResponse = await api.get("/reception/orders/history");
           const allOrders = historyResponse.data.orders || [];
-
+          
           // Filter orders with pending status
-          const filteredPendingOrders = allOrders.filter(
-            (order) => order.orderStatus?.toLowerCase() === "pending"
+          const filteredPendingOrders = allOrders.filter(order => 
+            order.orderStatus?.toLowerCase() === 'pending'
           );
-
+          
           setPendingOrders(filteredPendingOrders);
         } catch (historyErr) {
-          console.error("Error fetching from history:", historyErr);
+          console.error('Error fetching from history:', historyErr);
           setPendingOrders([]);
         }
       } else {
         setPendingOrders(pendingOrders);
       }
     } catch (err) {
-      console.error("Error fetching from pending endpoint:", err);
+      console.error('Error fetching from pending endpoint:', err);
       // Fallback: fetch from history and filter for pending status
       try {
         const historyResponse = await api.get("/reception/orders/history");
         const allOrders = historyResponse.data.orders || [];
-
+        
         // Filter orders with pending status
-        const filteredPendingOrders = allOrders.filter(
-          (order) => order.orderStatus?.toLowerCase() === "pending"
+        const filteredPendingOrders = allOrders.filter(order => 
+          order.orderStatus?.toLowerCase() === 'pending'
         );
-
+        
         setPendingOrders(filteredPendingOrders);
       } catch (fallbackErr) {
-        console.error("Error fetching from history:", fallbackErr);
-        setError("Error fetching pending orders");
+        console.error('Error fetching from history:', fallbackErr);
+        setError('Error fetching pending orders');
       }
     } finally {
       setLoading(false);
@@ -100,13 +100,11 @@ const PendingOrders = () => {
   // Update Order Status to Processing
   const updateOrderStatus = async (orderId) => {
     try {
-      const response = await api.patch(`/reception/orders/${orderId}/status`, {
-        status: "processing",
-      });
-
+      const response = await api.patch(`/reception/orders/${orderId}/status`, { status: 'processing' });
+      
       // Remove the order from the pending orders list since it's no longer pending
-      setPendingOrders((prevOrders) =>
-        prevOrders.filter((order) => order._id !== orderId)
+      setPendingOrders(prevOrders =>
+        prevOrders.filter(order => order._id !== orderId)
       );
 
       // Check if prices were updated
@@ -114,16 +112,16 @@ const PendingOrders = () => {
         setPriceUpdateModal({
           isOpen: true,
           details: response.data.priceUpdateDetails,
-          orderId: orderId,
+          orderId: orderId
         });
       } else {
         setSuccessDialog({
           isOpen: true,
-          message: response.data.message,
+          message: response.data.message
         });
       }
     } catch (err) {
-      setError("Error updating order status");
+      setError('Error updating order status');
     }
   };
 
@@ -132,40 +130,36 @@ const PendingOrders = () => {
     setPriceUpdateModal({
       isOpen: false,
       details: [],
-      orderId: null,
+      orderId: null
     });
   };
 
   // Get Payment Status Color
   const getPaymentStatusColor = (status) => {
     const colors = {
-      paid: "text-green-600",
-      pending: "text-yellow-600",
-      failed: "text-red-600",
+      'paid': 'text-green-600',
+      'pending': 'text-yellow-600',
+      'failed': 'text-red-600'
     };
-    return colors[status?.toLowerCase()] || "text-gray-600";
+    return colors[status?.toLowerCase()] || 'text-gray-600';
   };
 
   // Format Shipping Address
   const formatShippingAddress = (address) => {
-    if (!address || typeof address !== "object") return "N/A";
+    if (!address || typeof address !== 'object') return 'N/A';
     const { address: street, city, state, pinCode } = address;
-    return `${street || ""}, ${city || ""}, ${state || ""} ${pinCode || ""}`.trim();
+    return `${street || ''}, ${city || ''}, ${state || ''} ${pinCode || ''}`.trim();
   };
 
   // Format date
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString("en-IN");
+    return new Date(dateString).toLocaleString('en-IN');
   };
 
   // New handler for Mark as Processing
   const handleMarkAsProcessing = (order) => {
     // Always check for price updates
-    if (
-      order.priceUpdated &&
-      order.priceUpdateHistory &&
-      order.priceUpdateHistory.length > 0
-    ) {
+    if (order.priceUpdated && order.priceUpdateHistory && order.priceUpdateHistory.length > 0) {
       setConfirmDialog({
         isOpen: true,
         order,
@@ -187,10 +181,7 @@ const PendingOrders = () => {
       {loading && <p className="text-blue-500">Loading pending orders...</p>}
 
       {/* Price Update Alert Dialog */}
-      <AlertDialog
-        open={priceUpdateModal.isOpen}
-        onOpenChange={(open) => !open && closePriceUpdateModal()}
-      >
+      <AlertDialog open={priceUpdateModal.isOpen} onOpenChange={(open) => !open && closePriceUpdateModal()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Price Update Notice</AlertDialogTitle>
@@ -199,9 +190,7 @@ const PendingOrders = () => {
                 <ul className="mb-2">
                   {priceUpdateModal.details.map((detail, idx) => (
                     <li key={idx} className="mb-1">
-                      Price for <b>{detail.product?.name || "Product"}</b>{" "}
-                      increased from <b>₹{detail.oldPrice}</b> to{" "}
-                      <b>₹{detail.newPrice}</b>
+                      Price for <b>{detail.product?.name || 'Product'}</b> increased from <b>₹{detail.oldPrice}</b> to <b>₹{detail.newPrice}</b>
                     </li>
                   ))}
                 </ul>
@@ -218,12 +207,7 @@ const PendingOrders = () => {
         </AlertDialogContent>
       </AlertDialog>
       {/* Success Alert Dialog */}
-      <AlertDialog
-        open={successDialog.isOpen}
-        onOpenChange={(open) =>
-          !open && setSuccessDialog({ isOpen: false, message: "" })
-        }
-      >
+      <AlertDialog open={successDialog.isOpen} onOpenChange={(open) => !open && setSuccessDialog({ isOpen: false, message: '' })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Order Status Updated</AlertDialogTitle>
@@ -232,22 +216,14 @@ const PendingOrders = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => setSuccessDialog({ isOpen: false, message: "" })}
-            >
+            <AlertDialogAction onClick={() => setSuccessDialog({ isOpen: false, message: '' })}>
               OK
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       {/* Price Update Confirmation Dialog */}
-      <AlertDialog
-        open={confirmDialog.isOpen}
-        onOpenChange={(open) =>
-          !open &&
-          setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] })
-        }
-      >
+      <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Price Update Detected</AlertDialogTitle>
@@ -261,15 +237,10 @@ const PendingOrders = () => {
               </ul> */}
               <ul className="mb-2">
                 {(() => {
-                  const detail =
-                    confirmDialog.priceUpdates[
-                      confirmDialog.priceUpdates.length - 1
-                    ];
+                  const detail = confirmDialog.priceUpdates[confirmDialog.priceUpdates.length - 1];
                   return detail ? (
                     <li className="mb-1">
-                      Price for <b>{detail.product?.name || "Product"}</b>{" "}
-                      changed from <b>₹{detail.oldPrice}</b> to{" "}
-                      <b>₹{detail.newPrice}</b>
+                      Price for <b>{detail.product?.name || 'Product'}</b> changed from <b>₹{detail.oldPrice}</b> to <b>₹{detail.newPrice}</b>
                     </li>
                   ) : null;
                 })()}
@@ -278,28 +249,13 @@ const PendingOrders = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() =>
-                setConfirmDialog({
-                  isOpen: false,
-                  order: null,
-                  priceUpdates: [],
-                })
-              }
-            >
+            <AlertDialogCancel onClick={() => setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] })}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmDialog({
-                  isOpen: false,
-                  order: null,
-                  priceUpdates: [],
-                });
-                if (confirmDialog.order)
-                  updateOrderStatus(confirmDialog.order._id);
-              }}
-            >
+            <AlertDialogAction onClick={() => {
+              setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] });
+              if (confirmDialog.order) updateOrderStatus(confirmDialog.order._id);
+            }}>
               OK
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -342,49 +298,30 @@ const PendingOrders = () => {
                   return (
                     <tr key={order._id}>
                       <td className="py-2 px-4 border-b">{order._id}</td>
-                      <td className="py-2 px-4 border-b">
-                        {order.user?.name || "N/A"}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.user?.email || "N/A"}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.user?.phoneNumber || "N/A"}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.user?.customerDetails?.firmName || "N/A"}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {formatShippingAddress(order.shippingAddress)}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.user?.customerDetails?.userCode ||
-                          "(Miscellaneous)"}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.orderStatus}
-                      </td>
-                      <td
-                        className={`py-2 px-4 border-b font-medium ${getPaymentStatusColor(order.paymentStatus)}`}
-                      >
+                      <td className="py-2 px-4 border-b">{order.user?.name || "N/A"}</td>
+                      <td className="py-2 px-4 border-b">{order.user?.email || "N/A"}</td>
+                      <td className="py-2 px-4 border-b">{order.user?.phoneNumber || "N/A"}</td>
+                      <td className="py-2 px-4 border-b">{order.user?.customerDetails?.firmName || 'N/A'}</td>
+                      <td className="py-2 px-4 border-b">{formatShippingAddress(order.shippingAddress)}</td>
+                      <td className="py-2 px-4 border-b">{order.user?.customerDetails?.userCode || '(Miscellaneous)'}</td>
+                      <td className="py-2 px-4 border-b">{order.orderStatus}</td>
+                      <td className={`py-2 px-4 border-b font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
                         {order.paymentStatus}
                       </td>
-                      <td className="py-2 px-4 border-b">
-                        {order.paymentMethod}
-                      </td>
+                      <td className="py-2 px-4 border-b">{order.paymentMethod}</td>
                       <td className="py-2 px-4 border-b">
                         {order.products.map((item, index) => (
                           <div key={index} className="mb-1">
-                            {item.product?.name || "N/A"}: {item.quantity || 1}
+                            {item.product?.name || 'N/A'}: {item.quantity || 1}
                           </div>
                         ))}
                       </td>
                       <td className="py-2 px-4 border-b">
-                        {typeof order.totalAmount === "number"
+                        {typeof order.totalAmount === 'number'
                           ? `₹${order.totalAmount.toFixed(2)}`
                           : totalAmount > 0
-                            ? `₹${totalAmount.toFixed(2)}`
-                            : "N/A"}
+                          ? `₹${totalAmount.toFixed(2)}`
+                          : 'N/A'}
                       </td>
                       <td className="py-2 px-4 border-b">
                         <button
