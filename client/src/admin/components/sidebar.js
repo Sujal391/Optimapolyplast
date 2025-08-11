@@ -395,7 +395,6 @@ const Sidebar = () => {
     }
   `;
 
-  //  Proper active link highlighting
   const navItemClasses = (isActive) =>
     `p-2 rounded-lg flex items-center text-white space-x-3 no-underline transition-all duration-300 ${
       isActive ? "bg-[#415E72]" : "hover:bg-[#0F828C]"
