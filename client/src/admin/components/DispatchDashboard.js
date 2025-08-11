@@ -87,7 +87,10 @@ const Navbar = () => {
             Attendance
           </Link>
           <Link to="/user/dispatch" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
-            Search Challan History
+             Challan History
+          </Link>
+          <Link to="/user/pending-payment" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+           Pending Payment
           </Link>
           <div className="relative" ref={dropdownRef}>
             <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
@@ -101,6 +104,7 @@ const Navbar = () => {
                 <Link to="/order-history-dispatch" className="block px-4 py-2 hover:bg-gray-200">
                   Order History
                 </Link>
+               
                 
               </div>
             )}

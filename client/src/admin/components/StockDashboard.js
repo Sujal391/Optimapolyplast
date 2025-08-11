@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import axios from 'axios';
-import profile from '../../assets/profiles.jpg';
-import img from '../../assets/logo1.png';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import axios from "axios";
+import profile from "../../assets/profiles.jpg";
+import img from "../../assets/logo1.png";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -23,9 +23,11 @@ const Navbar = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
-        config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        config.headers.Authorization = token.startsWith("Bearer ")
+          ? token
+          : `Bearer ${token}`;
       }
       return config;
     },
@@ -35,15 +37,16 @@ const Navbar = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          window.location.href = '/login';
+          window.location.href = "/login";
           return;
         }
-        const response = await api.get('/auth/profile');
+        const response = await api.get("/auth/profile");
         setProfileData(response.data);
+        console.log(response.data);
       } catch (err) {
-        console.error('Error fetching profile:', err);
+        console.error("Error fetching profile:", err);
       }
     };
     fetchProfileData();
@@ -54,21 +57,23 @@ const Navbar = () => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+        // console.log(dropdownRef.current.contains(event.target));
+        // console.log(dropdownRef.current);
       }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
     };
-    
-    document.addEventListener('mousedown', handleClickOutside);
+
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/';
+    localStorage.removeItem("token");
+    window.location.href = "/";
   };
 
   return (
@@ -79,23 +84,37 @@ const Navbar = () => {
           <img src={img} alt="Stock Panel Logo" />
         </Link>
 
-        <div className="flex space-x-4 items-center">
-        <Link to="/stock/dashboard" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+        <div className="flex space-x-4 items-center mt-4">
+          <Link
+            to="/stock/dashboard"
+            className="bg-blue-500 px-4 py-2 rounded-lg no-underline hover:bg-blue-600 transition duration-300"
+          >
             Home
           </Link>
-          <Link to="/attandance/stock" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          <Link
+            to="/attandance/stock"
+            className="bg-blue-500 px-4 py-2 rounded-lg no-underline hover:bg-blue-600 transition duration-300"
+          >
             Attendance
           </Link>
 
-          <Link to="/Add-Stocks" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          <Link
+            to="/Add-Stocks"
+            className="bg-blue-500 no-underline px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+          >
             Add Stocks
           </Link>
 
           {/* Profile Section */}
-          <div className="relative flex items-center space-x-3" ref={profileRef}>
+          <div
+            className="relative flex items-center space-x-3"
+            ref={profileRef}
+          >
             <div className="text-right">
-              <p className="font-semibold">{profileData?.name || 'N/A'}</p>
-              <p className="text-sm text-gray-200">{profileData?.role || 'N/A'}</p>
+              <p className="font-semibold">{profileData?.name || "N/A"}</p>
+              <p className="text-sm text-gray-200">
+                {profileData?.role || "N/A"}
+              </p>
             </div>
             {/* Clickable Profile Image */}
             <img
@@ -107,14 +126,17 @@ const Navbar = () => {
           </div>
 
           {/* Logout Button */}
-          <button onClick={handleLogout} className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300">
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+          >
             Logout
           </button>
         </div>
       </header>
 
       {/* Welcome Message Centered */}
-      {location.pathname === '/stock/dashboard' && (
+      {location.pathname === "/stock/dashboard" && (
         <motion.div
           className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-blue-500 to-indigo-500"
           initial={{ opacity: 0, y: -20 }}
@@ -127,7 +149,10 @@ const Navbar = () => {
           <p className="text-xl md:text-3xl text-white">
             Manage your Dispatch operations with ease.
           </p>
-          <Link to="/attandance/stock" className="mt-4 px-6 py-2 bg-white text-blue-500 rounded-lg hover:bg-gray-200 transition duration-300">
+          <Link
+            to="/attandance/stock"
+            className="mt-4 px-6 py-2 bg-white text-blue-500 rounded-lg hover:bg-gray-200 transition no-underline duration-300"
+          >
             Explore Features
           </Link>
         </motion.div>
@@ -137,7 +162,9 @@ const Navbar = () => {
       {isProfileOpen && profileData && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white text-black rounded-lg p-6 max-w-sm w-full shadow-lg">
-            <h2 className="text-xl font-semibold mb-4 text-center">User Profile</h2>
+            <h2 className="text-xl font-semibold mb-4 text-center">
+              User Profile
+            </h2>
             <div className="flex justify-center mb-4">
               <img
                 src={profileData?.image || profile}
@@ -146,11 +173,22 @@ const Navbar = () => {
               />
             </div>
             <div className="space-y-2">
-              <p><strong>Name:</strong> {profileData?.name || 'N/A'}</p>
-              <p><strong>Email:</strong> {profileData?.email || 'N/A'}</p>
-              <p><strong>Phone No:</strong> {profileData?.phoneNumber || 'N/A'}</p>
-              <p><strong>Role:</strong> {profileData?.role || 'N/A'}</p>
-              <p><strong>Joined:</strong> {new Date(profileData?.createdAt).toLocaleDateString() || 'N/A'}</p>
+              <p>
+                <strong>Name:</strong> {profileData?.name || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {profileData?.email || "N/A"}
+              </p>
+              <p>
+                <strong>Phone No:</strong> {profileData?.phoneNumber || "N/A"}
+              </p>
+              <p>
+                <strong>Role:</strong> {profileData?.role || "N/A"}
+              </p>
+              <p>
+                <strong>Joined:</strong>{" "}
+                {new Date(profileData?.createdAt).toLocaleDateString() || "N/A"}
+              </p>
             </div>
             <div className="mt-4 text-center">
               <button

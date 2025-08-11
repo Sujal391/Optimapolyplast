@@ -5,10 +5,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-// Create an Axios instance with a base URL and request interceptor for auth token.
-// const api = axios.create({
-//   baseURL: "https://rewa-project.onrender.com/api",
-// });
+
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,

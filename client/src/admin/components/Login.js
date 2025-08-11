@@ -167,12 +167,13 @@
 
 // export default Login;
 
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AiOutlineEyeInvisible, AiOutlineEye } from "react-icons/ai";
 import bg from "../../assets/bg.jpg"; // Background image
 import logo from "../../assets/logo1.png"; // Logo
+import { motion } from "motion/react";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
@@ -250,23 +251,28 @@ const Login = () => {
 
   return (
     <div
-      className="h-screen bg-cover bg-center flex items-center justify-center"
-      style={{
-        backgroundImage: `url(${bg})`,
-      }}
+      className="min-h-screen   w-full bg-cover bg-center flex items-center mx-auto my-auto  py-5 px-1 justify-center md:(min-width:768px) sm:(max-width:640px) md:p2 md:text-base sm-p1 sm:text-sm"
+      style={{ backgroundImage: `url('/images/bottle.png')` }}
     >
-      <div className="bg-white bg-opacity-100 rounded-2xl shadow-lg p-8 w-11/12 sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-4/12 mx-auto lg:ml-16">
+      {/* <Lottie
+        animationData={loginBg}
+        loop={true}
+        className="absolute top-0 left-0 w-full h-full"
+      /> */}
+      <div className="bg-white bg-opacity-10  rounded-2xl w-full max-w-sm  shadow-lg p-8 sm:w-10/12 md:w-8/12 lg:w-6/12 xl:w-4/12 mx-auto lg:ml-16">
         <div className="flex justify-center mb-2">
           <img
             src={logo}
             alt="Optima Polyplast Logo"
-            className="w-75 h-40"
+            className="w-30 h-20 opacity-70 backdrop-blur-sm"
           />
         </div>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-gray-700 text-center">
+        <h4 className="text-md font-bold sm:text-base mb-2 text-[0B1D51] text-center">
           Welcome Back!
-        </h1>
-        <p className="text-gray-800 mb-4 text-center">Please Log In to Your Account</p>
+        </h4>
+        <p className="text-[0B1D51] mb-4 font-bold text-md text-center">
+          Please Log In to Your Account
+        </p>
 
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-center">
@@ -276,7 +282,10 @@ const Login = () => {
 
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label htmlFor="identifier" className="block text-gray-700 font-medium mb-2">
+            <label
+              htmlFor="identifier"
+              className="text-base font-bold block text-[0B1D51]-400  mb-2"
+            >
               Email or User Code
             </label>
             <input
@@ -285,53 +294,66 @@ const Login = () => {
               placeholder="Enter your email or user code"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-orange-300 focus:outline-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-orange-300 focus:outline-none bg-white bg-opacity-10"
               disabled={isLoading}
               required
             />
           </div>
 
-          <div className="mb-4 relative">
-            <label htmlFor="password" className="block text-gray-700 font-medium mb-2">
+          <div className="mb-3 relative">
+            <label
+              htmlFor="password"
+              className="block text-[0B1D51] font-bold sm:mr-2  mb-2"
+            >
               Password
             </label>
-            <input
-              id="password"
-              type={passwordVisible ? "text" : "password"}
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-orange-300 focus:outline-none"
-              disabled={isLoading}
-              required
-            />
-            <span
-              className="absolute right-4 top-1/2 transform -translate-y-1/7 cursor-pointer"
-              onClick={() => setPasswordVisible(!passwordVisible)}
+            <div className="relative flex sm:block ">
+              <input
+                id="password"
+                type={passwordVisible ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-orange-300 focus:outline-none bg-white bg-opacity-10"
+                disabled={isLoading}
+                required
+              />
+
+              <span
+                className="ml-4 sm:absolute sm:right-4 right-6  top-1/2  sm:top-1/2 sm:transform sm:-translate-y-1/2 cursor-pointer"
+                onClick={() => setPasswordVisible(!passwordVisible)}
+              >
+                {passwordVisible ? (
+                  <AiOutlineEye size={24} className="text-gray-600" />
+                ) : (
+                  <AiOutlineEyeInvisible size={24} className="text-gray-600" />
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* <div className="flex justify-end mb-6">
+            <Link
+              to="/ForgotPassword"
+              className="text-sm sm:text-md text-orange-500 hover:underline"
             >
-              {passwordVisible ? (
-                <AiOutlineEye size={24} className="text-gray-600" />
-              ) : (
-                <AiOutlineEyeInvisible size={24} className="text-gray-600" />
-              )}
-            </span>
-          </div>
+              {/* Forgot Password? */}
+          {/* </Link>
+          </div> */}
 
-          <div className="flex justify-end mb-6">
-            <Link to="/ForgotPassword" className="text-sm sm:text-md text-orange-500 hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
-
-          <div className="flex justify-center">
+          <motion.div
+            whileHover={{ scale: 1.3 }}
+            whileTap={{ scale: 1.5 }}
+            className="flex justify-center"
+          >
             <button
               type="submit"
-              className="px-12 py-3 text-white text-lg font-bold bg-gradient-to-b from-orange-500 to-orange-700 rounded-lg shadow-md hover:shadow-lg transition duration-300 disabled:opacity-50"
+              className="px-10 py-2 text-white text-lg font-medium bg-gradient-to-b  from-[#252e49] to-[#294263] rounded-lg shadow-md hover:shadow-lg transition duration-300 disabled:opacity-90"
               disabled={isLoading}
             >
-              {isLoading ? "Logging in..." : "Log In"}
+              {isLoading ? <LoadingSpinner /> : "Log In"}
             </button>
-          </div>
+          </motion.div>
         </form>
       </div>
     </div>
