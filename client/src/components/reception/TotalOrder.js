@@ -11,8 +11,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // const token = localStorage.getItem("token");
-      const token = cookies.get("token");
+    const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -21,6 +20,18 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Auth expired or missing: clear token and redirect to login
+      cookies.remove("token");
+      try { window.location.href = "/"; } catch (_) {}
+    }
+    return Promise.reject(error);
+  }
 );
 
 const OrderManagement = () => {
@@ -83,9 +94,12 @@ const OrderManagement = () => {
   const fetchOrderHistory = async () => {
     try {
       const response = await api.get("/reception/orders/history");
-      setOrderHistory(response.data.orders);
+      const orders = response.data?.orders || [];
+      setOrderHistory(Array.isArray(orders) ? orders : []);
+      setHistoryError('');
     } catch (err) {
-      setHistoryError('Error fetching order history');
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Error fetching order history';
+      setHistoryError(msg);
     }
   };
 
@@ -94,17 +108,18 @@ const OrderManagement = () => {
   }, []);
 
   return (
+  <div  className="bg-green-100 min-h-screen">
     <div className="container mx-auto p-6">
-      <h1 className="text-5xl font-bold text-center mb-8">Order Management</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">Order Management</h1>
 
       {/* Order History Section */}
       <div>
-        <h2 className="text-2xl font-semibold mb-4">Order History (Last 35 Days)</h2>
+        <h2 className="text-xl font-semibold mb-4">Order History (Last 35 Days)</h2>
         {historyError && <p className="text-red-500">{historyError}</p>}
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border">
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
             <thead>
-              <tr>
+              <tr className="bg-gray-400">
                 <th className="py-2 px-4 border-b">Order ID</th>
                 <th className="py-2 px-4 border-b">Customer Name</th>
                 <th className="py-2 px-4 border-b">Email</th>
@@ -125,13 +140,13 @@ const OrderManagement = () => {
               {orderHistory.length > 0 ? (
                 orderHistory.map((order) => {
                   // Calculate the total amount by summing product prices * quantities
-                  const totalAmount = order.products.reduce((sum, item) => {
-                    if (item.product && item.product.price) {
-                      const quantity = item.quantity ? item.quantity : 1;
-                      return sum + item.product.price * quantity;
-                    }
-                    return sum;
-                  }, 0);
+                  // const totalAmount = order.products.reduce((sum, item) => {
+                  //   if (item.product && item.product.price) {
+                  //     const quantity = item.quantity ? item.quantity : 1;
+                  //     return sum + item.product.price * quantity;
+                  //   }
+                  //   return sum;
+                  // }, 0);
 
                   return (
                     <tr 
@@ -294,6 +309,7 @@ const OrderManagement = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 

@@ -176,6 +176,7 @@ const PendingOrders = () => {
   }, []);
 
   return (
+  <div className="bg-green-100 min-h-screen">  
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">Pending Orders</h1>
       {error && <p className="text-red-500">{error}</p>}
@@ -265,10 +266,10 @@ const PendingOrders = () => {
 
       <div>
         <h2 className="text-xl font-semibold mb-4">List of Pending Orders</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border">
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
             <thead>
-              <tr>
+              <tr className="bg-gray-400">
                 <th className="py-2 px-4 border-b">Order ID</th>
                 <th className="py-2 px-4 border-b">Customer Name</th>
                 <th className="py-2 px-4 border-b">Email</th>
@@ -347,6 +348,7 @@ const PendingOrders = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

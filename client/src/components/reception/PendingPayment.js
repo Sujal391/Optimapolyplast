@@ -96,8 +96,9 @@ const PendingPayment = () => {
   }, []);
 
   return (
+  <div className="min-h-screen bg-green-100">  
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Pending Payments</h1>
+      <h1 className="text-3xl font-bold text-center mb-6">Pending Payments</h1>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -106,9 +107,9 @@ const PendingPayment = () => {
       )}
       
       {loading && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+        <p className="bg-blue-100 border border-blue-400 text-blue-700 text-center px-4 py-3 rounded mb-4">
           Loading pending payments...
-        </div>
+        </p>
       )}
 
       <div className="mb-4">
@@ -119,10 +120,10 @@ const PendingPayment = () => {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
-            <thead className="bg-gray-50">
-              <tr>
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
+            <thead className=" text-black">
+              <tr className="bg-gray-400">
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Payment ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Order ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Customer Info</th>
@@ -275,6 +276,7 @@ const PendingPayment = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 

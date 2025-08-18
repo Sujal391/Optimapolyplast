@@ -348,6 +348,7 @@ const Attendance = () => {
   };
 
   return (
+   <div className="bg-green-100 min-h-screen"> 
     <div className="container mx-auto p-6">
       {/* Title */}
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
@@ -357,7 +358,7 @@ const Attendance = () => {
       {/* Flex container for both forms */}
       <div className="flex flex-col md:flex-row justify-center items-start md:space-x-6 space-y-6 md:space-y-0">
         {/* --- Check-In Form --- */}
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full md:w-96">
+        <div className="bg-stone-200 shadow-xl rounded-lg p-8 w-full md:w-96">
           <h2 className="text-2xl font-semibold text-center mb-6">Check-In</h2>
           {errorCheckIn && (
             <p className="text-red-500 text-center mb-4">{errorCheckIn}</p>
@@ -391,7 +392,7 @@ const Attendance = () => {
                 type="file"
                 accept="image/*"
                 onChange={(e) => setCheckInImage(e.target.files[0])}
-                className="w-full p-3 border border-gray-300 rounded-lg"
+                className="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg"
                 required
               />
             </div>
@@ -411,7 +412,7 @@ const Attendance = () => {
         </div>
 
         {/* --- Check-Out Form --- */}
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full md:w-96">
+        <div className="bg-stone-200 shadow-xl rounded-lg p-8 w-full md:w-96">
           <h2 className="text-2xl font-semibold text-center mb-6">
             Check-Out
           </h2>
@@ -454,6 +455,7 @@ const Attendance = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

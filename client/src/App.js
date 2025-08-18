@@ -17,7 +17,7 @@ import UploadBanner from './components/admin/UploadBanner';
 import AdminAttendance from './components/admin/AdminAttendance';
 import UserList from './components/admin/UserList';
 import CreateUser from './components/admin/CreateUser';
-import TotalUser from './components/admin/TotalUser';
+import TotalUser from './components/reception/TotalUser';
 
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';

@@ -594,6 +594,7 @@ const DeliveryCharge = () => {
   }, []);
 
   return (
+  <div className="bg-green-100 min-h-screen">
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">Delivery Charges Management</h1>
 
@@ -609,10 +610,10 @@ const DeliveryCharge = () => {
 
       <div>
         <h2 className="text-2xl font-semibold mb-6 text-gray-700">Orders with Pending Payments</h2>
-        <div className="overflow-x-auto shadow-lg rounded-lg">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
+            <thead>
+              <tr className="bg-gray-400 text-black">
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Order ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Customer Name</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Email</th>
@@ -757,6 +758,7 @@ const DeliveryCharge = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 
