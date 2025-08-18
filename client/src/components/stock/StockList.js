@@ -542,6 +542,7 @@ import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -549,7 +550,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -574,7 +576,8 @@ const StockHistory = () => {
 
   const fetchStockHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (!token) throw new Error('No authentication token found');
 
       const params = {};
@@ -603,7 +606,8 @@ const StockHistory = () => {
 
   const handleDownload = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (!token) throw new Error('No authentication token found');
 
       const params = {};

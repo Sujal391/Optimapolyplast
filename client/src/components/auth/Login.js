@@ -173,6 +173,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AiOutlineEyeInvisible, AiOutlineEye } from "react-icons/ai";
 import bg from "../../assets/bg.jpg"; // Background image
 import logo from "../../assets/logo1.png"; // Logo
+import cookies from 'js-cookie';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
@@ -218,12 +219,15 @@ const Login = () => {
       const role = userData.role;
       if (!role) throw new Error("User role not found");
 
-      localStorage.setItem("token", `Bearer ${token}`);
-      localStorage.setItem("userRole", role);
+      // localStorage.setItem("token", `Bearer ${token}`);
+      cookies.set("token", `Bearer ${token}`);
+      // localStorage.setItem("userRole", role);
+      cookies.set("userRole",role);
 
       const userCode = userData.customerDetails?.userCode || userData.userCode;
       if (userCode) {
-        localStorage.setItem("userCode", userCode);
+        // localStorage.setItem("userCode", userCode);
+        cookies.set("userCode", userCode);
       }
 
       navigate(getDashboardPath(role));

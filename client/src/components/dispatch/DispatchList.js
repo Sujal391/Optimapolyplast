@@ -5,6 +5,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaDownload, FaPrint, FaTimes, FaCheck, FaSync } from "react-icons/fa";
 import logo from '../../assets/logo1.png';
+import cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -12,7 +13,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
     }

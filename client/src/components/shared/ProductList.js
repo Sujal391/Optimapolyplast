@@ -538,6 +538,7 @@ import Sidebar from "../layout/Sidebar";
 import { Link } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -545,7 +546,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -576,7 +578,8 @@ const Product = () => {
 
   const fetchProducts = async () => {
     try {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (!token) {
         throw new Error("No authentication token found");
       }
@@ -619,7 +622,8 @@ const Product = () => {
   const handleDeleteProduct = async (productId) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        const token = localStorage.getItem("token");
+        // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
         if (!token) {
           throw new Error("No authentication token found");
         }
@@ -882,7 +886,8 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (!token) {
         throw new Error("No authentication token found");
       }

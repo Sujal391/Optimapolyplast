@@ -1,6 +1,4 @@
-
-
-
+import cookies from 'js-cookie';
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +11,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token

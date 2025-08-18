@@ -304,6 +304,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import Sidebar from "../layout/Sidebar";
 import profile from "../../assets/profile.jpg";
+import cookies from 'js-cookie';
 
 const Order = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -322,7 +323,8 @@ const Order = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
       }
@@ -334,7 +336,8 @@ const Order = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (!token) {
         setError("No authentication token found. Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);

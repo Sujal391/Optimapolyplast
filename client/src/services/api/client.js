@@ -1,4 +1,5 @@
 import axios from 'axios';
+import cookies from 'js-cookie';
 
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -6,7 +7,8 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token

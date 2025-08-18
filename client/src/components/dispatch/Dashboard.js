@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import profile from '../../assets/profiles.jpg';
 import img from '../../assets/logo1.png';
+import cookies from 'js-cookie';
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -23,7 +24,8 @@ const Navbar = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
       }
@@ -35,7 +37,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
         if (!token) {
           window.location.href = '/login';
           return;

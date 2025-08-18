@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Sidebar from '../layout/Sidebar';
+import cookies from 'js-cookie';
 
 const Attendance = () => {
   const [attendanceData, setAttendanceData] = useState({ attendance: [], summary: {} });
@@ -23,7 +24,8 @@ const Attendance = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) config.headers.Authorization = token;
       return config;
     },

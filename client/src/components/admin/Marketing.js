@@ -544,6 +544,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import cookies from 'js-cookie';
 
 const Marketing = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -565,7 +566,8 @@ const Marketing = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
       }

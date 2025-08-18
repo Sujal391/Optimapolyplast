@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import cookies from 'js-cookie';
 
 
 // const api = axios.create({
@@ -15,7 +16,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+    const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token;
     }
@@ -74,7 +76,8 @@ const CreatedUsers = () => {
     const profileData = { name, email, phoneNumber: phone, password, role };
     console.log('Profile Data:', profileData);
 
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+    const token = cookies.get("token");
     if (!token) {
       setToastMessage({ message: "Authorization token missing or expired.", type: "error" });
       navigate("/login");

@@ -1,13 +1,16 @@
 
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import cookies from 'js-cookie';
 
 const PrivateRoute = ({ children, allowedRoles }) => {
   const location = useLocation();
   
   // Get user role from localStorage
-  const userRole = localStorage.getItem('userRole');
-  const token = localStorage.getItem('token');
+  // const userRole = localStorage.getItem('userRole');
+      const userRole = cookies.get("userRole");
+  // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
 
   // Debug logs
   console.log('Current user role:', userRole);
