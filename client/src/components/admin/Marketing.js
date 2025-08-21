@@ -54,7 +54,7 @@
 //         `/admin/marketing-activities/${activityId}/review`,
 //         {}
 //       );
-      
+
 //       if (response.status === 200) {
 //         toast.success(`Review submitted successfully for activity ID: ${activityId}`);
 //         setMarketingData((prevData) => ({
@@ -269,7 +269,6 @@
 // };
 
 // export default Marketing;
-
 
 // import React, { useState, useEffect } from "react";
 // import axios from "axios";
@@ -534,8 +533,6 @@
 
 // export default Marketing;
 
-
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
@@ -544,7 +541,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import cookies from 'js-cookie';
+import cookies from "js-cookie";
 
 const Marketing = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -569,7 +566,9 @@ const Marketing = () => {
       // const token = localStorage.getItem("token");
       const token = cookies.get("token");
       if (token) {
-        config.headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+        config.headers.Authorization = token.startsWith("Bearer ")
+          ? token
+          : `Bearer ${token}`;
       }
       return config;
     },
@@ -577,7 +576,12 @@ const Marketing = () => {
   );
 
   const handleReview = async (activityId) => {
-    if (marketingData?.activities?.some((activity) => activity._id === activityId && activity.status === "reviewed")) {
+    if (
+      marketingData?.activities?.some(
+        (activity) =>
+          activity._id === activityId && activity.status === "reviewed"
+      )
+    ) {
       toast.info("This activity has already been reviewed.");
       return;
     }
@@ -586,9 +590,14 @@ const Marketing = () => {
     toast.info("Submitting review...");
 
     try {
-      const response = await api.patch(`/admin/marketing-activities/${activityId}/review`, {});
+      const response = await api.patch(
+        `/admin/marketing-activities/${activityId}/review`,
+        {}
+      );
       if (response.status === 200) {
-        toast.success(`Review submitted successfully for activity ID: ${activityId}`);
+        toast.success(
+          `Review submitted successfully for activity ID: ${activityId}`
+        );
         setMarketingData((prevData) => ({
           ...prevData,
           activities: prevData.activities.map((activity) =>
@@ -630,20 +639,20 @@ const Marketing = () => {
 
   const handleDownload = async () => {
     try {
-      const response = await api.get('admin/download-marketing-activities', {
-        responseType: 'blob' // Important for file downloads
+      const response = await api.get("admin/download-marketing-activities", {
+        responseType: "blob", // Important for file downloads
       });
-      
+
       // Create a blob URL and trigger download
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', 'Marketing_Activities.xlsx');
+      link.setAttribute("download", "Marketing_Activities.xlsx");
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       toast.success("Marketing activities downloaded successfully!");
     } catch (err) {
       console.error("Error downloading marketing activities:", err);
@@ -656,8 +665,10 @@ const Marketing = () => {
 
   const filterByDate = (date) => {
     if (!date) return marketingData?.activities;
-    return marketingData?.activities.filter((activity) =>
-      new Date(activity.createdAt).toLocaleDateString() === date.toLocaleDateString()
+    return marketingData?.activities.filter(
+      (activity) =>
+        new Date(activity.createdAt).toLocaleDateString() ===
+        date.toLocaleDateString()
     );
   };
 
@@ -689,7 +700,9 @@ const Marketing = () => {
 
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center space-x-4">
-                <p className="font-semibold text-gray-700">Filter by Created Date:</p>
+                <p className="font-semibold text-gray-700">
+                  Filter by Created Date:
+                </p>
                 <DatePicker
                   selected={filterDate}
                   onChange={(date) => setFilterDate(date)}
@@ -718,20 +731,41 @@ const Marketing = () => {
                 >
                   <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b">
                     <div>
-                      <p className="font-semibold text-gray-700">Marketing Person:</p>
-                      <p className="text-blue-600">{activity.marketingUser?.name || "N/A"}</p>
-                      <p className="text-blue-700">{activity.marketingUser?.email || "N/A"}</p>
-                      <p className="font-semibold text-gray-700 mt-2">Firm Name:</p>
-                      <p>{activity.marketingUser?.customerDetails?.firmName || "N/A"}</p>
+                      <p className="font-semibold text-gray-700">
+                        Marketing Person:
+                      </p>
+                      <p className="text-blue-600">
+                        {activity.marketingUser?.name || "N/A"}
+                      </p>
+                      <p className="text-blue-700">
+                        {activity.marketingUser?.email || "N/A"}
+                      </p>
+                      <p className="font-semibold text-gray-700 mt-2">
+                        Firm Name:
+                      </p>
+                      <p>
+                        {activity.marketingUser?.customerDetails?.firmName ||
+                          "N/A"}
+                      </p>
                     </div>
                     <div>
                       <p className="font-semibold text-gray-700">Created:</p>
-                      <p>{new Date(activity.createdAt).toLocaleString()}</p>
+                      <p>
+                        {new Date(activity.createdAt).toLocaleString("en-IN")}
+                      </p>
                       {activity.reviewedAt && (
                         <>
-                          <p className="font-semibold text-gray-700 mt-2">Reviewed:</p>
-                          <p>{new Date(activity.reviewedAt).toLocaleString()}</p>
-                          <p className="font-semibold text-gray-700 mt-2">Reviewed By:</p>
+                          <p className="font-semibold text-gray-700 mt-2">
+                            Reviewed:
+                          </p>
+                          <p>
+                            {new Date(activity.reviewedAt).toLocaleString(
+                              "en-IN"
+                            )}
+                          </p>
+                          <p className="font-semibold text-gray-700 mt-2">
+                            Reviewed By:
+                          </p>
                           <p>{activity.reviewedBy || "N/A"}</p>
                         </>
                       )}
@@ -750,7 +784,9 @@ const Marketing = () => {
                       <p className="text-red-900">{activity.location}</p>
                       <p className="font-bold mt-2">Visit Type:</p>
                       <p className="capitalize">
-                        {activity.visitType ? activity.visitType.replace("_", " ") : "N/A"}
+                        {activity.visitType
+                          ? activity.visitType.replace("_", " ")
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
@@ -793,16 +829,24 @@ const Marketing = () => {
                   <div className="flex justify-between items-center">
                     <p className="font-semibold">
                       Status:{" "}
-                      <span className={`capitalize ${activity.status === 'reviewed' ? 'text-green-600' : 'text-yellow-600'}`}>
+                      <span
+                        className={`capitalize ${activity.status === "reviewed" ? "text-green-600" : "text-yellow-600"}`}
+                      >
                         {activity.status}
                       </span>
                     </p>
                     {activity.status === "reviewed" ? (
-                      <button className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md cursor-not-allowed" disabled>
+                      <button
+                        className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md cursor-not-allowed"
+                        disabled
+                      >
                         Already Reviewed
                       </button>
                     ) : reviewing === activity._id ? (
-                      <button className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md cursor-not-allowed" disabled>
+                      <button
+                        className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md cursor-not-allowed"
+                        disabled
+                      >
                         Pending...
                       </button>
                     ) : (
@@ -823,7 +867,11 @@ const Marketing = () => {
                 className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex items-center justify-center z-50"
                 onClick={closeZoomedImage}
               >
-                <img src={zoomedImage} alt="Zoomed" className="max-w-full max-h-full rounded-lg" />
+                <img
+                  src={zoomedImage}
+                  alt="Zoomed"
+                  className="max-w-full max-h-full rounded-lg"
+                />
               </div>
             )}
           </div>

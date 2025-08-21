@@ -140,7 +140,7 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
                 <strong>Role:</strong> {profileData?.role || 'Admin'}
               </p>
               <p>
-                <strong>Joined:</strong> {new Date(profileData?.createdAt).toLocaleDateString() || 'N/A'}
+                <strong>Joined:</strong> {new Date(profileData?.createdAt).toLocaleDateString("en-IN") || 'N/A'}
               </p>
             </div>
             <div className="mt-4 text-center">

@@ -4,6 +4,7 @@ import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import cookies from 'js-cookie';
+import { Button } from "../ui/button";
 
 
 // const api = axios.create({
@@ -141,9 +142,9 @@ const CreatedUsers = () => {
       <div className="flex-1 p-4 rounded-3xl">
         <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl mt-6">
           <div className="flex items-center justify-between p-6 border-b bg-blue-700">
-            <h1 className="text-3xl text-white">Created Panels</h1>
+            <h1 className="text-3xl text-white">Created Panel Users</h1>
             <button onClick={() => setIsModalOpen(true)} className="bg-white text-black py-2 px-4 rounded-lg hover:bg-blue-200">
-              ➕ Create New User
+              ➕ Create New Panel User
             </button>
           </div>
 
@@ -181,10 +182,9 @@ const CreatedUsers = () => {
                     {/* </td> */}
                     <td className="px-4 py-2">
                       {/* <button className=" hover:underline">✏️</button> */}
-                      <button onClick={() => handleDelete(member._id)} className="ml-0 text-red-500 bg-red-200 hover:bg-red-400 hover:text-red-700 px-3 py-2 rounded-lg">
-                    Delete🗑️
-                      </button>
-
+                      <Button variant="destructive" onClick={() => handleDelete(member._id)}>
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}

@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit,faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
 // Layout components
 import Header from './components/layout/Header';
@@ -39,12 +41,14 @@ import PendingPayment from './components/dispatch/PendingPayment';
 // Stock Panel Components
 import StockDashboard from './components/stock/Dashboard';
 import StockAttendance from './components/stock/Attendance';
-import StockList from './components/stock/StockList';
+import StockList from './components/admin/StockList';
 import AddStock from './components/stock/AddStock';
 
 // Shared Components
 import OrderList from './components/shared/OrderList';
 import ProductList from './components/shared/ProductList';
+
+library.add(faEdit, faTrashCan);
 
 // Conditional Header rendering (only for admin routes)
 function HeaderWithConditionalRender() {

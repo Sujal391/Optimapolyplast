@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Paginator from '../shared/Paginator';
 import cookies from "js-cookie";
 // import Navbar from './Navbar';
 
@@ -42,6 +43,10 @@ const CustomerManagement = () => {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState("all"); // 'all', 'active', 'inactive'
+
+  // pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchCustomers = async () => {
     setLoading(true);
@@ -119,6 +124,16 @@ const CustomerManagement = () => {
     return filter === "active" ? customer.isActive : !customer.isActive;
   });
 
+  // derived pagination
+  // const filteredCustomers = customers.filter((customer) => {
+  //   if (filter === "all") return true;
+  //   return filter === "active" ? customer.isActive : !customer.isActive;
+  // });
+  const total = filteredCustomers.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedCustomers = filteredCustomers.slice(startIdx, endIdx);
+
   return (
     <div className="min-h-screen bg-green-100">
       {/* Main Content */}
@@ -142,9 +157,9 @@ const CustomerManagement = () => {
                 </h2>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                  className="bg-red-600 text-white px-4 py-2 rounded-xl shadow-xl hover:bg-red-700 transition duration-300"
                 >
-                  Back to Customer List
+                  X
                 </button>
               </div>
               <form
@@ -170,7 +185,7 @@ const CustomerManagement = () => {
                 <div className="col-span-2 text-center">
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                    className="bg-blue-600 text-white px-6 py-2 rounded-xl shadow-xl hover:bg-blue-700 transition duration-300"
                   >
                     Register
                   </button>
@@ -179,7 +194,7 @@ const CustomerManagement = () => {
             </div>
           </div>
         ) : (
-        <div className="mx-44">  
+        <div className="mx-44">
           <div className="bg-stone-200 shadow-xl rounded-xl p-6 w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-800">
@@ -187,7 +202,7 @@ const CustomerManagement = () => {
               </h2>
               <button
                 onClick={() => setShowForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                className="bg-green-600 text-white px-4 py-2 rounded-xl shadow-xl hover:bg-green-700 transition duration-300"
               >
                 + Create New User
               </button>
@@ -229,7 +244,7 @@ const CustomerManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredCustomers.map((customer) => (
+                  {pagedCustomers.map((customer) => (
                     <tr
                       key={customer.userCode}
                       className="border border-gray-500 hover:bg-gray-100 transition duration-200"
@@ -266,8 +281,24 @@ const CustomerManagement = () => {
                 </tbody>
               </table>
             </div>
+          {/* pagination controls */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600 whitespace-nowrap">
+              Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+            </div>
+            <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={pageSize}
+              onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+            >
+              {[5,10,20,50].map((n) => (
+                <option key={n} value={n}>{n} / page</option>
+              ))}
+            </select>
           </div>
-        </div>  
+          </div>
+        </div>
         )}
       </div>
     </div>

@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import cookies from 'js-cookie';
+import Paginator from '../shared/Paginator';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -48,6 +49,11 @@ const PendingOrders = () => {
     priceUpdates: [],
   });
 
+  // pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+
   // Fetch Pending Orders
   const fetchPendingOrders = async () => {
     setLoading(true);
@@ -56,18 +62,18 @@ const PendingOrders = () => {
       const response = await api.get("/reception/orders/pending");
       console.log(response.data); // Log the response to inspect the structure
       const pendingOrders = response.data.orders || [];
-      
+
       // If no orders found, try fetching from history and filter for pending status
       if (pendingOrders.length === 0) {
         try {
           const historyResponse = await api.get("/reception/orders/history");
           const allOrders = historyResponse.data.orders || [];
-          
+
           // Filter orders with pending status
-          const filteredPendingOrders = allOrders.filter(order => 
+          const filteredPendingOrders = allOrders.filter(order =>
             order.orderStatus?.toLowerCase() === 'pending'
           );
-          
+
           setPendingOrders(filteredPendingOrders);
         } catch (historyErr) {
           console.error('Error fetching from history:', historyErr);
@@ -82,12 +88,12 @@ const PendingOrders = () => {
       try {
         const historyResponse = await api.get("/reception/orders/history");
         const allOrders = historyResponse.data.orders || [];
-        
+
         // Filter orders with pending status
-        const filteredPendingOrders = allOrders.filter(order => 
+        const filteredPendingOrders = allOrders.filter(order =>
           order.orderStatus?.toLowerCase() === 'pending'
         );
-        
+
         setPendingOrders(filteredPendingOrders);
       } catch (fallbackErr) {
         console.error('Error fetching from history:', fallbackErr);
@@ -102,7 +108,7 @@ const PendingOrders = () => {
   const updateOrderStatus = async (orderId) => {
     try {
       const response = await api.patch(`/reception/orders/${orderId}/status`, { status: 'processing' });
-      
+
       // Remove the order from the pending orders list since it's no longer pending
       setPendingOrders(prevOrders =>
         prevOrders.filter(order => order._id !== orderId)
@@ -175,8 +181,14 @@ const PendingOrders = () => {
     fetchPendingOrders();
   }, []);
 
+  // derived pagination
+  const total = pendingOrders.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedOrders = pendingOrders.slice(startIdx, endIdx);
+
   return (
-  <div className="bg-green-100 min-h-screen">  
+  <div className="bg-green-100 min-h-screen">
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold text-center mb-6">Pending Orders</h1>
       {error && <p className="text-red-500">{error}</p>}
@@ -286,8 +298,8 @@ const PendingOrders = () => {
               </tr>
             </thead>
             <tbody>
-              {pendingOrders.length > 0 ? (
-                pendingOrders.map((order) => {
+              {pagedOrders.length > 0 ? (
+                pagedOrders.map((order) => {
                   // Calculate Total Amount
                   const totalAmount = order.products.reduce((sum, item) => {
                     if (item.product && item.product.price) {
@@ -345,6 +357,22 @@ const PendingOrders = () => {
               )}
             </tbody>
           </table>
+        </div>
+        {/* pagination controls */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600 whitespace-nowrap">
+            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+          </div>
+          <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={pageSize}
+            onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+          >
+            {[5,10,20,50].map((n) => (
+              <option key={n} value={n}>{n} / page</option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

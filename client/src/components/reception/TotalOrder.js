@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import cookies from 'js-cookie';
+import Paginator from '../shared/Paginator';
 
 // Create an axios instance with a base URL and request interceptor
 const api = axios.create({
@@ -43,6 +44,11 @@ const OrderManagement = () => {
     details: [],
     orderId: null
   });
+
+  // pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
 
   const getPaymentStatusColor = (status) => {
     const colors = {
@@ -107,6 +113,12 @@ const OrderManagement = () => {
     fetchOrderHistory();
   }, []);
 
+  // derived pagination
+  const total = orderHistory.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedOrders = orderHistory.slice(startIdx, endIdx);
+
   return (
   <div  className="bg-green-100 min-h-screen">
     <div className="container mx-auto p-6">
@@ -137,19 +149,10 @@ const OrderManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {orderHistory.length > 0 ? (
-                orderHistory.map((order) => {
-                  // Calculate the total amount by summing product prices * quantities
-                  // const totalAmount = order.products.reduce((sum, item) => {
-                  //   if (item.product && item.product.price) {
-                  //     const quantity = item.quantity ? item.quantity : 1;
-                  //     return sum + item.product.price * quantity;
-                  //   }
-                  //   return sum;
-                  // }, 0);
-
+              {pagedOrders.length > 0 ? (
+                pagedOrders.map((order) => {
                   return (
-                    <tr 
+                    <tr
                       key={order._id}
                       className={`hover:bg-gray-50 transition-colors ${
                         order.priceUpdated ? 'bg-yellow-50 border-l-4 border-l-yellow-400' : ''
@@ -250,6 +253,22 @@ const OrderManagement = () => {
             </tbody>
           </table>
         </div>
+        {/* pagination controls */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600 whitespace-nowrap">
+            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+          </div>
+          <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={pageSize}
+            onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+          >
+            {[5,10,20,50].map((n) => (
+              <option key={n} value={n}>{n} / page</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Price Update Modal */}
@@ -265,7 +284,7 @@ const OrderManagement = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-700 mb-2">
                 Price update history for Order ID: <strong>{priceUpdateModal.orderId}</strong>

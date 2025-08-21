@@ -275,6 +275,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import cookies from 'js-cookie';
+import { Button } from "../ui/button";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -462,12 +463,12 @@ const BannerManagement = () => {
                       {banner.isActive ? "Active" : "Inactive"}
                     </td>
                     <td className="px-4 py-2">
-                      <button
+                      <Button
+                        variant="destructive"
                         onClick={() => handleDelete(banner._id)}
-                        className="ml-0 text-red-500 bg-red-200 hover:bg-red-400 hover:text-red-700 px-3 py-2 rounded-lg"
                       >
-                        Delete🗑️
-                      </button>
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}

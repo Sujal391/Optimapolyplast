@@ -239,7 +239,7 @@ const Navbar = () => {
     <>
       {/* Navbar */}
       <header className="bg-cyan-900 text-black p-6 flex justify-between items-center shadow-lg">
-        <Link to="/reception/dashboard" className="w-40 h-26">
+        <Link to="/reception/dashboard" className="w-20 h-12">
           <img src={img} alt="Reception Panel Logo" />
         </Link>
 

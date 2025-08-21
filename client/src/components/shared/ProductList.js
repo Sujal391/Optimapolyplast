@@ -535,10 +535,11 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
-import { Link } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import cookies from 'js-cookie';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -1111,15 +1112,15 @@ const ProductCard = ({ product, onEdit, onDelete }) => {
         <div className="absolute top-2 right-2 flex gap-2">
           <button
             onClick={() => onEdit(product)}
-            className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700"
+            className="p-2 h-10 w-10 bg-blue-600 text-white rounded-full hover:bg-blue-700"
           >
-            ✏️
+            <FontAwesomeIcon icon={["fas", "edit"]} />
           </button>
           <button
             onClick={() => onDelete(product._id)}
-            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-700"
+            className="p-2 h-10 w-10 bg-red-500 text-white rounded-full hover:bg-red-700"
           >
-            🗑️
+            <FontAwesomeIcon icon={faTrashCan} />
           </button>
         </div>
       </div>
