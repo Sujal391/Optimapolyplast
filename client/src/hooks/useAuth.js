@@ -27,8 +27,8 @@ export const useAuth = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
+    cookies.remove('token');
+    cookies.remove('userRole');
     setUser(null);
   };
 

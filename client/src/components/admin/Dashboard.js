@@ -42,7 +42,7 @@ const Dashboard = () => {
             : "Error fetching stats. Please try again later."
         );
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
+          cookies.remove("token");
           window.location.href = "/";
         }
         setLoading(false);

@@ -70,7 +70,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    cookies.remove('token');
     window.location.href = '/';
   };
 

@@ -62,7 +62,7 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Remove the token from localStorage
+    cookies.remove('token'); // Remove the token from localStorage
     navigate('/login'); // Redirect to login page
   };
 

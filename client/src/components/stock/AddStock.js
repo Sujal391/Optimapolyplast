@@ -622,7 +622,7 @@ export default function StockManagement() {
                         <td className="p-2">{entry.boxes}</td>
                         <td className="p-2">{entry.changeType}</td>
                         <td className="p-2">{entry.notes || "N/A"}</td>
-                        <td className="p-2">{new Date(entry.updatedAt).toLocaleString()}</td>
+                        <td className="p-2">{new Date(entry.updatedAt).toLocaleString("en-IN")}</td>
                       </tr>
                     ))}
                   </tbody>

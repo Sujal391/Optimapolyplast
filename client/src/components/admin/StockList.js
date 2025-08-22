@@ -596,7 +596,7 @@ const StockHistory = () => {
         error.response?.status === 401 ||
         error.message === "No authentication token found"
       ) {
-        localStorage.removeItem("token");
+        cookies.remove("token");
         window.location.href = "/login";
       }
     }
@@ -640,7 +640,7 @@ const StockHistory = () => {
         error.response?.status === 401 ||
         error.message === "No authentication token found"
       ) {
-        localStorage.removeItem("token");
+        cookies.remove("token");
         window.location.href = "/login";
       }
     }

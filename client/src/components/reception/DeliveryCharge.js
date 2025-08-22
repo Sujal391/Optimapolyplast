@@ -476,7 +476,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import cookies from 'js-cookie';
-import Paginator from '../shared/Paginator';
+import Paginator from '../common/Paginator';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,

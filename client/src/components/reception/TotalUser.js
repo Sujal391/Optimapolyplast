@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import Paginator from '../shared/Paginator';
+import Paginator from '../common/Paginator';
 import cookies from "js-cookie";
 // import Navbar from './Navbar';
 
@@ -114,7 +114,7 @@ const CustomerManagement = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    cookies.remove("token");
     window.location.href = "/"; // Redirect to login page
   };
 

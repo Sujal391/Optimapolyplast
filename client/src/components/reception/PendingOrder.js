@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import cookies from 'js-cookie';
-import Paginator from '../shared/Paginator';
+import Paginator from '../common/Paginator';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,

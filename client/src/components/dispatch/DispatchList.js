@@ -229,32 +229,28 @@ const DispatchComponent = () => {
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
-      <ToastContainer position="top-right" autoClose={3000} />
-
-      <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-lg mb-6 transform hover:scale-[1.01] transition-all duration-300">
-        <h1 className="text-2xl md:text-3xl font-bold text-blue-700 bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-          Dispatch Dashboard
-        </h1>
-        <button
-          onClick={fetchProcessingOrders}
-          className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors duration-200"
-          title="Refresh Orders"
-        >
-          <FaSync className={isLoading ? "animate-spin" : ""} />
-        </button>
-      </div>
+      <ToastContainer position="top-right" autoClose={3000} />        
 
       <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100 transform transition-all duration-300 hover:shadow-2xl">
-        <h2 className="text-xl md:text-2xl font-semibold mb-6 text-gray-800 bg-gradient-to-r from-blue-500 to-teal-500 bg-clip-text text-transparent">
-          Active Processing Orders
-        </h2>
+        <div className="flex justify-between">
+          <h2 className="text-xl md:text-2xl font-semibold mb-6 text-gray-800 bg-gradient-to-r from-blue-500 to-teal-500 bg-clip-text text-transparent">
+            Active Processing Orders
+          </h2>
+          <button
+            onClick={fetchProcessingOrders}
+            className="p-3 bg-blue-600 text-white w-10 h-10 rounded-full hover:bg-blue-700 transition-colors duration-200"
+            title="Refresh Orders"
+          >
+            <FaSync className={isLoading ? "animate-spin" : ""} />
+          </button>
+        </div>
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
           </div>
         ) : processingOrders.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-[1000px] border-collapse">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-50 to-teal-50 text-gray-700">
                   {["Firm Name", "Type", "Customer", "User Code", "Phone", "Address", "Status", "Payment", "Method", "Items", "Delivery", "Total", "Actions"].map((header) => (

@@ -43,11 +43,11 @@
 //         setTimeout(() => navigate("/login"), 2000);
 //         return;
 //       }
-  
+
 //       const categoryFilter = filterCategory === "All" ? "all" : filterCategory;
 //       const response = await api.get(`/admin/orders?type=${categoryFilter}`);
 //       const fetchedOrders = response.data.orders;
-  
+
 //       const mappedOrders = fetchedOrders.map(order => ({
 //         _id: order._id,
 //         orderId: order.orderId,
@@ -66,7 +66,7 @@
 //         createdAt: order.createdAt || new Date(),
 //         type: order.type || "N/A",
 //       }));
-  
+
 //       setOrders(mappedOrders);
 //     } catch (err) {
 //       if (err.response?.status === 401) {
@@ -301,21 +301,35 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import Sidebar from "../layout/Sidebar";
 import profile from "../../assets/profile.jpg";
 import cookies from 'js-cookie';
 
+import PriceUpdateConfirm from './PriceUpdateConfirm';
 const Order = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [headerDropdownOpen, setHeaderDropdownOpen] = useState(false);
   const [orders, setOrders] = useState([]);
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("preview"); // Default to preview
   const [filterCategory, setFilterCategory] = useState("All");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  // price update confirmation dialog
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    order: null,
+    details: [],
+  });
+
+  // processing confirmation dialog
+  const [processingDialog, setProcessingDialog] = useState({
+    isOpen: false,
+    order: null,
+  });
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API,
@@ -343,11 +357,27 @@ const Order = () => {
         setTimeout(() => navigate("/login"), 2000);
         return;
       }
-  
-      const categoryFilter = filterCategory === "All" ? "all" : filterCategory;
-      const response = await api.get(`/admin/orders?type=${categoryFilter}`);
+
+      let response;
+      if (filterStatus === "preview") {
+        // Fetch preview orders with MongoDB _id
+        console.log('Fetching preview orders...');
+        response = await api.get('/admin/orders/preview');
+      } else {
+        // Fetch all orders for other statuses
+        const categoryFilter = filterCategory === "All" ? "all" : filterCategory;
+        console.log('Fetching all orders with filters...');
+        response = await api.get(`/admin/orders?type=${categoryFilter}`);
+      }
       const fetchedOrders = response.data.orders;
-  
+
+      // Debug: Check API response
+      console.log(`Fetched ${fetchedOrders.length} orders for status: ${filterStatus}`);
+      if (fetchedOrders.length > 0) {
+        console.log('First order _id:', fetchedOrders[0]?._id);
+        console.log('First order status:', fetchedOrders[0]?.orderStatus);
+      }
+
       const mappedOrders = fetchedOrders.map(order => ({
         _id: order._id,
         orderId: order.orderId,
@@ -356,7 +386,7 @@ const Order = () => {
         customerPhone: order.user?.phoneNumber || "N/A",
         firmName: order.firmName || order.user?.customerDetails?.firmName || "N/A",
         shippingAddress: order.shippingAddress || "N/A",
-        userCode: order.user?.customerDetails?.userCode || "N/A",
+        userCode: order.user?.userCode || order.user?.customerDetails?.userCode || "N/A",
         orderStatus: order.orderStatus || "N/A",
         paymentStatus: order.paymentStatus || "N/A",
         paymentMethod: order.paymentMethod || "N/A",
@@ -366,7 +396,7 @@ const Order = () => {
         createdAt: order.createdAt || new Date(),
         type: order.type || "N/A",
       }));
-  
+
       setOrders(mappedOrders);
     } catch (err) {
       if (err.response?.status === 401) {
@@ -412,20 +442,53 @@ const Order = () => {
     }
   };
 
-  const handleChangeOrderStatus = async (orderId) => {
-    if (window.confirm("Are you sure you want to mark this order as Processing?")) {
-      try {
-        await api.post(`/admin/orders/${orderId}/process`);
-        fetchOrders();
-      } catch {
-        setError("Failed to update order status.");
-      }
+  const updateOrderToProcessing = async (orderId) => {
+    if (!orderId) {
+      setError("Order ID is missing. Cannot update order status.");
+      return;
     }
+
+    try {
+      console.log('Updating order with MongoDB _id:', orderId);
+
+      // Use the working admin endpoint
+      const response = await api.post(`/admin/orders/${orderId}/process`);
+
+      // Handle successful response
+      if (response.data.priceUpdated && response.data.priceUpdateDetails) {
+        // Show price update confirmation dialog
+        setConfirmDialog({
+          isOpen: true,
+          order: { _id: orderId },
+          details: response.data.priceUpdateDetails
+        });
+      } else {
+        // Show success dialog
+        setConfirmDialog({ isOpen: true, message: response.data.message });
+      }
+
+      fetchOrders();
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      setError(error.response?.data?.error || error.response?.data?.details || "Failed to update order status.");
+    }
+  };
+
+  const handleChangeOrderStatus = (order) => {
+    console.log('Processing order:', order.orderId, 'MongoDB _id:', order._id);
+
+    if (!order._id) {
+      setError("Order ID is missing. Cannot update order status.");
+      return;
+    }
+
+    // Always show confirmation dialog first
+    setProcessingDialog({ isOpen: true, order });
   };
 
   useEffect(() => {
     fetchOrders();
-  }, [filterCategory, filterStatus]);
+  }, [filterCategory, filterStatus]); // Re-fetch when filters change
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -445,7 +508,6 @@ const Order = () => {
       processing: "text-yellow-600 font-medium",
       confirmed: "text-green-600 font-medium",
       shipped: "text-blue-600 font-medium",
-      delivered: "text-green-700 font-medium",
       cancelled: "text-red-700 font-medium",
     };
     return statusClasses[status] || "text-gray-700";
@@ -486,7 +548,6 @@ const Order = () => {
                   <option value="preview">Preview</option>
                   <option value="confirmed">Confirmed</option>
                   <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
                 <button
@@ -570,7 +631,7 @@ const Order = () => {
                         <td className="py-3 px-4 text-gray-800">
                           {order.products.map((item, index) => (
                             <div key={index} className="mb-1">
-                              {item.product?.name || "N/A"}: {item.quantity || 1}
+                              {item.name || item.product?.name || "N/A"}: {item.quantity || 1}
                             </div>
                           ))}
                         </td>
@@ -578,7 +639,7 @@ const Order = () => {
                         <td className="py-3 px-4">
                           {order.orderStatus === "preview" && (
                             <button
-                              onClick={() => handleChangeOrderStatus(order._id)}
+                              onClick={() => handleChangeOrderStatus(order)}
                               className="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 transition-colors text-sm"
                             >
                               Mark as Processing
@@ -594,6 +655,32 @@ const Order = () => {
           </div>
         </div>
       </div>
+      {/* Processing Confirmation Dialog */}
+      <PriceUpdateConfirm
+        open={processingDialog.isOpen}
+        onOpenChange={(open) => !open && setProcessingDialog({ isOpen: false, order: null })}
+        details={[]} // No price details for initial confirmation
+        onConfirm={() => {
+          const id = processingDialog.order?._id;
+          setProcessingDialog({ isOpen: false, order: null });
+          if (id) updateOrderToProcessing(id);
+        }}
+        onClose={() => setProcessingDialog({ isOpen: false, order: null })}
+        title="Confirm Order Processing"
+        description="Are you sure you want to mark this order as processing? This action will update the order status from preview to processing."
+      />
+
+      {/* Price Update Notification Dialog */}
+      <PriceUpdateConfirm
+        open={confirmDialog.isOpen}
+        onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, order: null, details: [] })}
+        details={confirmDialog.details}
+        onConfirm={() => setConfirmDialog({ isOpen: false, order: null, details: [] })}
+        onClose={() => setConfirmDialog({ isOpen: false, order: null, details: [] })}
+        title="Order Processed Successfully"
+        description="The order has been moved to processing status. The following price updates were applied:"
+        showOnlyOk={true}
+      />
     </div>
   );
 };

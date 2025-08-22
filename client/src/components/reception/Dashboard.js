@@ -231,7 +231,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    cookies.remove("token");
     window.location.href = "/";
   };
 
@@ -384,7 +384,7 @@ const Navbar = () => {
               </p>
               <p>
                 <strong>Joined:</strong>{" "}
-                {new Date(profileData?.createdAt).toLocaleDateString() || "N/A"}
+                {new Date(profileData?.createdAt).toLocaleDateString("en-IN") || "N/A"}
               </p>
             </div>
             <div className="mt-4 text-center">

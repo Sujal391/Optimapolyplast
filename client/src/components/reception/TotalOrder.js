@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import cookies from 'js-cookie';
-import Paginator from '../shared/Paginator';
+import Paginator from '../common/Paginator';
 
 // Create an axios instance with a base URL and request interceptor
 const api = axios.create({

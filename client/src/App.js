@@ -45,8 +45,8 @@ import StockList from './components/admin/StockList';
 import AddStock from './components/stock/AddStock';
 
 // Shared Components
-import OrderList from './components/shared/OrderList';
-import ProductList from './components/shared/ProductList';
+import OrderList from './components/admin/OrderList';
+import ProductList from './components/admin/ProductList';
 
 library.add(faEdit, faTrashCan);
 
@@ -210,7 +210,7 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/attandance/dispatch" element={
+        <Route path="/dispatch/attandance" element={
           <PrivateRoute allowedRoles={['dispatch']}>
             <AuthLayout>
               <DispatchDashboard />
@@ -218,7 +218,7 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/dispatch" element={
+        <Route path="/dispatch/processing-orders" element={
           <PrivateRoute allowedRoles={['dispatch']}>
             <AuthLayout>
               <DispatchDashboard />
@@ -226,7 +226,7 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/order-history-dispatch" element={
+        <Route path="/dispatch/dispatch-history" element={
           <PrivateRoute allowedRoles={['dispatch']}>
             <AuthLayout>
               <DispatchDashboard />
@@ -234,7 +234,7 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/user/dispatch" element={
+        <Route path="/dispatch/challan-history" element={
           <PrivateRoute allowedRoles={['dispatch']}>
             <AuthLayout>
               <DispatchDashboard />
@@ -242,7 +242,7 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/user/pending-payment" element={
+        <Route path="/dispatch/pending-payment" element={
           <PrivateRoute allowedRoles={['dispatch']}>
             <AuthLayout>
               <DispatchDashboard />

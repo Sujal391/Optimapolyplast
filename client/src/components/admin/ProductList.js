@@ -600,7 +600,7 @@ const Product = () => {
         error.response?.status === 401 ||
         error.message === "No authentication token found"
       ) {
-        localStorage.removeItem("token");
+        cookies.remove("token");
         window.location.href = "/login";
       }
     }
@@ -638,7 +638,7 @@ const Product = () => {
           error.response?.status === 401 ||
           error.message === "No authentication token found"
         ) {
-          localStorage.removeItem("token");
+          cookies.remove("token");
           window.location.href = "/login";
         }
       }
@@ -906,7 +906,7 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
         error.response?.status === 401 ||
         error.message === "No authentication token found"
       ) {
-        localStorage.removeItem("token");
+        cookies.remove("token");
         window.location.href = "/login";
       }
     }
