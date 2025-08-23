@@ -18,7 +18,7 @@ export default function PriceUpdateConfirm({
   onClose,
   title = "Price Update Detected",
   description = "The following price updates were detected:",
-  showOnlyOk = false
+  showOnlyOk = false,
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -26,34 +26,24 @@ export default function PriceUpdateConfirm({
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>
-            {description ? (
-              <div>
-                <p className="mb-3">{description}</p>
-                {details && details.length > 0 && (
-                  <ul className="list-disc pl-5 space-y-1">
-                    {details.map((d, idx) => (
-                      <li key={idx}>
-                        Price for <b>{d.product?.name || d.product || 'Product'}</b> changed from <b>₹{d.oldPrice}</b> to <b>₹{d.newPrice}</b>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              details && details.length > 0 ? (
-                <ul className="list-disc pl-5 space-y-1">
-                  {details.map((d, idx) => (
-                    <li key={idx}>
-                      Price for <b>{d.product?.name || d.product || 'Product'}</b> changed from <b>₹{d.oldPrice}</b> to <b>₹{d.newPrice}</b>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No price updates detected.</p>
-              )
-            )}
+            {description && <p className="mb-3">{description}</p>}
+
+            {details && details.length > 0 ? (
+              <ul className="list-disc pl-5 space-y-1">
+                {details.map((d, idx) => (
+                  <li key={idx}>
+                    Price for{" "}
+                    <b>{d.product?.name || "Product"}</b> changed
+                    from <b>₹{d.oldPrice}</b> to <b>₹{d.newPrice}</b>
+                  </li>
+                ))}
+              </ul>
+            ) : !description ? (
+              <p>No price updates detected.</p>
+            ) : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
+
         <AlertDialogFooter>
           {showOnlyOk ? (
             <AlertDialogAction onClick={onConfirm}>OK</AlertDialogAction>
@@ -68,4 +58,5 @@ export default function PriceUpdateConfirm({
     </AlertDialog>
   );
 }
+
 

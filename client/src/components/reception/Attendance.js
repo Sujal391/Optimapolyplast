@@ -308,16 +308,25 @@ const Attendance = () => {
     formData.append("selectedDate", today);
     formData.append("checkInImage", checkInImage);
 
+    console.log('Check-in request data:', { selectedDate: today, hasImage: !!checkInImage });
+
     try {
       const response = await api.post("/reception/check-in", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      console.log('Check-in success response:', response.data);
       setSuccessMessageCheckIn(response.data.message);
       setErrorCheckIn("");
       setCheckInImage(null);
     } catch (err) {
+      console.error('Check-in error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data
+      });
       setErrorCheckIn(
         err.response?.data?.error || "Error during check-in"
       );
@@ -332,13 +341,23 @@ const Attendance = () => {
     setLoadingCheckOut(true);
     setErrorCheckOut("");
 
+    console.log('Check-out request data:', { selectedDate: today });
+    console.log('Today value:', today);
+
     try {
       const response = await api.post("/reception/check-out", {
         selectedDate: today,
       });
+      console.log('Check-out success response:', response.data);
       setSuccessMessageCheckOut(response.data.message);
       setErrorCheckOut("");
     } catch (err) {
+      console.error('Check-out error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        headers: err.response?.headers
+      });
       setErrorCheckOut(
         err.response?.data?.error || "Error during check-out"
       );
