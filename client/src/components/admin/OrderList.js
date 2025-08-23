@@ -658,27 +658,31 @@ const Order = () => {
       {/* Processing Confirmation Dialog */}
       <PriceUpdateConfirm
         open={processingDialog.isOpen}
-        onOpenChange={(open) => !open && setProcessingDialog({ isOpen: false, order: null })}
-        details={[]} // No price details for initial confirmation
+        onOpenChange={(open) =>
+          !open && setProcessingDialog({ isOpen: false, order: null, details: [] })
+        }
+        details={processingDialog.details || []} // ✅ show backend-provided price changes here
         onConfirm={() => {
           const id = processingDialog.order?._id;
-          setProcessingDialog({ isOpen: false, order: null });
+          setProcessingDialog({ isOpen: false, order: null, details: [] });
           if (id) updateOrderToProcessing(id);
         }}
-        onClose={() => setProcessingDialog({ isOpen: false, order: null })}
+        onClose={() => setProcessingDialog({ isOpen: false, order: null, details: [] })}
         title="Confirm Order Processing"
-        description="Are you sure you want to mark this order as processing? This action will update the order status from preview to processing."
+        description="Are you sure you want to mark this order as processing? The following price updates will be applied:"
       />
 
-      {/* Price Update Notification Dialog */}
+      {/* Success Notification Dialog */}
       <PriceUpdateConfirm
         open={confirmDialog.isOpen}
-        onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, order: null, details: [] })}
-        details={confirmDialog.details}
-        onConfirm={() => setConfirmDialog({ isOpen: false, order: null, details: [] })}
-        onClose={() => setConfirmDialog({ isOpen: false, order: null, details: [] })}
+        onOpenChange={(open) =>
+          !open && setConfirmDialog({ isOpen: false, order: null })
+        }
+        details={[]} // ✅ no price details anymore
+        onConfirm={() => setConfirmDialog({ isOpen: false, order: null })}
+        onClose={() => setConfirmDialog({ isOpen: false, order: null })}
         title="Order Processed Successfully"
-        description="The order has been moved to processing status. The following price updates were applied:"
+        description="The order has been moved to processing status successfully."
         showOnlyOk={true}
       />
     </div>
