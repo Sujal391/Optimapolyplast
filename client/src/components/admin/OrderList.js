@@ -329,7 +329,32 @@ const Order = () => {
   const [processingDialog, setProcessingDialog] = useState({
     isOpen: false,
     order: null,
+    details: [],
   });
+
+  const handleMarkAsProcessing = (order) => {
+  setProcessingDialog({
+    isOpen: true,
+    order,
+    details: order.priceUpdateDetails || [],
+  });
+};
+
+  // Auto-dismiss error after 10 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 10000); // 10 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Manual error dismiss function
+  const dismissError = () => {
+    setError(null);
+  };
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API,
@@ -391,7 +416,10 @@ const Order = () => {
         paymentStatus: order.paymentStatus || "N/A",
         paymentMethod: order.paymentMethod || "N/A",
         products: order.products || [],
-        totalAmount: order.totalAmount || 0,
+        oldTotalAmount: order.totalAmount ?? 0,                // always the original
+        totalAmount: order.currentTotalAmount ?? order.totalAmount ?? 0, // updated if available
+        priceUpdated: order.priceUpdated ?? false,
+        priceUpdateDetails: order.priceUpdateDetails || [],
         gstNumber: order.gstNumber || "N/A",
         createdAt: order.createdAt || new Date(),
         type: order.type || "N/A",
@@ -464,7 +492,7 @@ const Order = () => {
         });
       } else {
         // Show success dialog
-        setConfirmDialog({ isOpen: true, message: response.data.message });
+        setConfirmDialog({ isOpen: true, order: { _id: orderId }, message: response.data.message });
       }
 
       fetchOrders();
@@ -475,15 +503,12 @@ const Order = () => {
   };
 
   const handleChangeOrderStatus = (order) => {
-    console.log('Processing order:', order.orderId, 'MongoDB _id:', order._id);
-
     if (!order._id) {
       setError("Order ID is missing. Cannot update order status.");
       return;
     }
-
     // Always show confirmation dialog first
-    setProcessingDialog({ isOpen: true, order });
+    setProcessingDialog({ isOpen: true, order, details: order.priceUpdateDetails || [] });
   };
 
   useEffect(() => {
@@ -573,8 +598,32 @@ const Order = () => {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-xl shadow-md">
-              {error}
+            <div style={{
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              padding: '12px 16px',
+              borderRadius: '4px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+              border: '1px solid #fecaca'
+            }}>
+              <span>{error}</span>
+              <button 
+                onClick={dismissError}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  color: '#dc2626',
+                  padding: '0 4px'
+                }}
+                aria-label="Close error"
+              >
+                ×
+              </button>
             </div>
           )}
 
@@ -635,7 +684,21 @@ const Order = () => {
                             </div>
                           ))}
                         </td>
-                        <td className="py-3 px-4 text-gray-800">₹{order.totalAmount}</td>
+                        <td className="py-3 px-4 text-gray-800">
+                          {order.priceUpdated ? (
+                            <div className="flex flex-col">
+                              <span className="line-through text-gray-500 inline-block">
+                                ₹{order.oldTotalAmount}
+                              </span>
+                              <span className="text-gray-800 font-semibold">
+                                ₹{order.totalAmount}
+                              </span>
+                            </div>
+                          ) : (
+                            <span>₹{order.totalAmount}</span>
+                          )}
+                        </td>
+
                         <td className="py-3 px-4">
                           {order.orderStatus === "preview" && (
                             <button
@@ -661,6 +724,7 @@ const Order = () => {
         onOpenChange={(open) =>
           !open && setProcessingDialog({ isOpen: false, order: null, details: [] })
         }
+        order={processingDialog.order}
         details={processingDialog.details || []} // ✅ show backend-provided price changes here
         onConfirm={() => {
           const id = processingDialog.order?._id;
@@ -669,8 +733,32 @@ const Order = () => {
         }}
         onClose={() => setProcessingDialog({ isOpen: false, order: null, details: [] })}
         title="Confirm Order Processing"
-        description="Are you sure you want to mark this order as processing? The following price updates will be applied:"
-      />
+        description={
+          processingDialog?.details?.length > 0 
+            ?<>
+              Are you sure you want to mark this order as processing?
+              <br />
+              The following price updates will be applied:
+             </>
+            : "Are you sure you want to mark this order as processing?"
+        }
+        />
+        {processingDialog?.details?.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {processingDialog.details.map((d, idx) => {
+              const productName =
+                processingDialog.order?.products?.find(p => String(p.productId) === String(d.product))?.name || "Unknown Product";
+              return (
+                <li key={idx} className="text-sm text-gray-700">
+                  Price of <span className="font-medium">{productName}</span> updated from{" "}
+                  <span className="line-through text-gray-500">₹{d.oldPrice}</span> to{" "}
+                  <span className="text-green-600 font-semibold">₹{d.newPrice}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
 
       {/* Success Notification Dialog */}
       <PriceUpdateConfirm
@@ -678,6 +766,7 @@ const Order = () => {
         onOpenChange={(open) =>
           !open && setConfirmDialog({ isOpen: false, order: null })
         }
+        order={confirmDialog.order}
         details={[]} // ✅ no price details anymore
         onConfirm={() => setConfirmDialog({ isOpen: false, order: null })}
         onClose={() => setConfirmDialog({ isOpen: false, order: null })}

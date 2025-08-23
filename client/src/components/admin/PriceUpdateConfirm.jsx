@@ -13,6 +13,7 @@ import {
 export default function PriceUpdateConfirm({
   open,
   onOpenChange,
+  order,
   details = [],
   onConfirm,
   onClose,
@@ -20,6 +21,15 @@ export default function PriceUpdateConfirm({
   description = "The following price updates were detected:",
   showOnlyOk = false,
 }) {
+  if (!open) return null;
+
+  // Map product names from order
+  const detailsWithNames = details.map(d => {
+    const productName =
+      order?.products?.find(p => String(p.productId) === String(d.product))?.name || "Unknown Product";
+    return { ...d, productName };
+  });
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -30,10 +40,10 @@ export default function PriceUpdateConfirm({
 
             {details && details.length > 0 ? (
               <ul className="list-disc pl-5 space-y-1">
-                {details.map((d, idx) => (
+                {detailsWithNames.map((d, idx) => (
                   <li key={idx}>
                     Price for{" "}
-                    <b>{d.product?.name || "Product"}</b> changed
+                    <b>{d.productName}</b> changed
                     from <b>₹{d.oldPrice}</b> to <b>₹{d.newPrice}</b>
                   </li>
                 ))}
