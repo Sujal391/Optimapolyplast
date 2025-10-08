@@ -20,6 +20,7 @@ import AdminAttendance from './components/admin/AdminAttendance';
 import UserList from './components/admin/UserList';
 import CreateUser from './components/admin/CreateUser';
 import TotalUser from './components/reception/TotalUser';
+import OrderList from './components/admin/OrderList';
 
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';
@@ -45,7 +46,6 @@ import StockList from './components/admin/StockList';
 import AddStock from './components/stock/AddStock';
 
 // Shared Components
-import OrderList from './components/admin/OrderList';
 import ProductList from './components/admin/ProductList';
 
 library.add(faEdit, faTrashCan);
@@ -84,6 +84,14 @@ function App() {
             <HeaderWithConditionalRender />
             <AuthLayout>
               <UserList />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/orders" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <OrderList />
             </AuthLayout>
           </PrivateRoute>
         }/>

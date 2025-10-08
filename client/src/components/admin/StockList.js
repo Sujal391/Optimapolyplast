@@ -540,6 +540,7 @@ import Sidebar from "../layout/Sidebar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import cookies from "js-cookie";
+import Paginator from "../shared/Paginator";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -566,6 +567,8 @@ const StockHistory = () => {
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     fetchStockHistory();
@@ -772,103 +775,149 @@ const StockHistory = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {stockHistory.map((stock) => (
-                    <tr
-                      key={stock.productId}
-                      className="border-b hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="p-4 text-gray-700">
-                        {new Date(stock.lastUpdated).toLocaleString("en-IN")}
-                        <p className="text-sm text-gray-600">
-                          By: {stock.lastUpdatedBy?.name} (
-                          {stock.lastUpdatedBy?.email})
-                          <span className="ml-1">
-                            [{stock.lastUpdatedBy?.role}]
-                          </span>
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <p className="font-semibold text-gray-800">
-                          {stock.productName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {stock.productDescription}
-                        </p>
-                      </td>
-                      <td className="p-4 text-gray-700">
-                        {stock.currentQuantity}
-                      </td>
-                      <td className="p-4 text-gray-700">
-                        {stock.totalAddedByStock}
-                      </td>
-                      <td className="p-4">
-                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                          {[...stock.stockAdditionHistory]
-                            .reverse()
-                            .map((addition, index) => (
-                              <div
-                                key={index}
-                                className="mb-2 p-2 bg-orange-50 rounded-lg shadow-sm"
-                              >
-                                <p className="text-sm text-orange-700">
-                                  {new Date(addition.date).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </p>
-                                <p className="text-sm text-orange-600">
-                                  Added:{" "}
-                                  <span className="font-medium">
-                                    {addition.quantity}
-                                  </span>
-                                </p>
-                                <p className="text-sm text-orange-500">
-                                  By: {addition.updatedBy?.name} (
-                                  {addition.updatedBy?.email})
-                                </p>
-                              </div>
-                            ))}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                          {[...stock.updateHistory]
-                            .reverse()
-                            .map((update, index) => (
-                              <div
-                                key={index}
-                                className="mb-3 p-3 bg-gray-50 rounded-lg shadow-sm"
-                              >
-                                <p className="text-sm font-medium text-gray-800">
-                                  {new Date(update.updatedAt).toLocaleString(
-                                    "en-IN"
-                                  )}
-                                </p>
-                                <p className="text-sm text-gray-700">
-                                  {update.changeType}:{" "}
-                                  <span className="font-medium">
-                                    {update.quantity}
-                                  </span>
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                  By: {update.updatedBy?.name} (
-                                  {update.updatedBy?.email})
-                                  <span className="ml-1">
-                                    [{update.updatedBy?.role}]
-                                  </span>
-                                </p>
-                                {update.notes && (
-                                  <p className="text-sm text-gray-500 italic">
-                                    Notes: {update.notes}
+                  {(() => {
+                    // Pagination logic
+                    const startIndex = (page - 1) * pageSize;
+                    const endIndex = startIndex + pageSize;
+                    const pagedStockHistory = stockHistory.slice(
+                      startIndex,
+                      endIndex
+                    );
+
+                    return pagedStockHistory.map((stock) => (
+                      <tr
+                        key={stock.productId}
+                        className="border-b hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="p-4 text-gray-700">
+                          {new Date(stock.lastUpdated).toLocaleString("en-IN")}
+                          <p className="text-sm text-gray-600">
+                            By: {stock.lastUpdatedBy?.name} (
+                            {stock.lastUpdatedBy?.email})
+                            <span className="ml-1">
+                              [{stock.lastUpdatedBy?.role}]
+                            </span>
+                          </p>
+                        </td>
+                        <td className="p-4">
+                          <p className="font-semibold text-gray-800">
+                            {stock.productName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {stock.productDescription}
+                          </p>
+                        </td>
+                        <td className="p-4 text-gray-700">
+                          {stock.currentQuantity}
+                        </td>
+                        <td className="p-4 text-gray-700">
+                          {stock.totalAddedByStock}
+                        </td>
+                        <td className="p-4">
+                          <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {[...stock.stockAdditionHistory]
+                              .reverse()
+                              .map((addition, index) => (
+                                <div
+                                  key={index}
+                                  className="mb-2 p-2 bg-orange-50 rounded-lg shadow-sm"
+                                >
+                                  <p className="text-sm text-orange-700">
+                                    {new Date(addition.date).toLocaleString(
+                                      "en-IN"
+                                    )}
                                   </p>
-                                )}
-                              </div>
-                            ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                                  <p className="text-sm text-orange-600">
+                                    Added:{" "}
+                                    <span className="font-medium">
+                                      {addition.quantity}
+                                    </span>
+                                  </p>
+                                  <p className="text-sm text-orange-500">
+                                    By: {addition.updatedBy?.name} (
+                                    {addition.updatedBy?.email})
+                                  </p>
+                                </div>
+                              ))}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                            {[...stock.updateHistory]
+                              .reverse()
+                              .map((update, index) => (
+                                <div
+                                  key={index}
+                                  className="mb-3 p-3 bg-gray-50 rounded-lg shadow-sm"
+                                >
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {new Date(update.updatedAt).toLocaleString(
+                                      "en-IN"
+                                    )}
+                                  </p>
+                                  <p className="text-sm text-gray-700">
+                                    {update.changeType}:{" "}
+                                    <span className="font-medium">
+                                      {update.quantity}
+                                    </span>
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    By: {update.updatedBy?.name} (
+                                    {update.updatedBy?.email})
+                                    <span className="ml-1">
+                                      [{update.updatedBy?.role}]
+                                    </span>
+                                  </p>
+                                  {update.notes && (
+                                    <p className="text-sm text-gray-500 italic">
+                                      Notes: {update.notes}
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
+
+              {/* Pagination Controls */}
+              {stockHistory.length > 0 && (
+                <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 px-6 pb-6 whitespace-nowrap">
+                  <div className="text-sm text-gray-700">
+                    Showing {(page - 1) * pageSize + 1}–
+                    {Math.min(page * pageSize, stockHistory.length)} of{" "}
+                    {stockHistory.length} records
+                  </div>
+                  <Paginator
+                    page={page}
+                    total={stockHistory.length}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                  />
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="pageSize" className="text-sm text-gray-700">
+                      Per page:
+                    </label>
+                    <select
+                      id="pageSize"
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(1); // Reset to first page when changing page size
+                      }}
+                      className="border border-gray-300 rounded px-2 py-1 text-sm"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </main>

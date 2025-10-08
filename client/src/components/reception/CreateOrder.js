@@ -738,6 +738,8 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import cookies from "js-cookie";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -989,11 +991,21 @@ const ProductSelection = ({
             placeholder="Boxes (min 230)"
             value={state.selectedProducts[product._id]?.boxes || ""}
             onChange={(e) => {
-              const boxes = parseInt(e.target.value, 10);
-              if (boxes < 230 && e.target.value !== "") {
-                toast.error(`Boxes for ${product.name} must be at least 230.`);
+              const inputValue = e.target.value;
+
+              // If input is cleared, remove the product from selected products
+              if (inputValue === "" || inputValue === null) {
+                const updatedProducts = { ...state.selectedProducts };
+                delete updatedProducts[product._id];
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "selectedProducts",
+                  value: updatedProducts,
+                });
                 return;
               }
+
+              const boxes = parseInt(inputValue, 10);
               dispatch({
                 type: "SET_FIELD",
                 field: "selectedProducts",
@@ -1011,7 +1023,7 @@ const ProductSelection = ({
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <input
+          {/* <input
             type="number"
             min="0"
             step="0.01"
@@ -1037,7 +1049,7 @@ const ProductSelection = ({
               });
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          /> */}
         </div>
       ))}
     </div>
@@ -1194,8 +1206,39 @@ const CreateOrder = () => {
   const handleOrder = async () => {
     dispatch({ type: "SET_LOADING", field: "isLoadingOrder", value: true });
     try {
+      // Check if any products are selected
+      const selectedProductsArray = Object.values(state.selectedProducts);
+
+      if (selectedProductsArray.length === 0) {
+        toast.error("Please select at least one product.");
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
+        return;
+      }
+
+      // Validate each product for minimum boxes requirement
+      const invalidProducts = selectedProductsArray.filter(
+        (product) => !product.boxes || product.boxes < 230
+      );
+
+      if (invalidProducts.length > 0) {
+        const productNames = invalidProducts.map(p => p.name).join(", ");
+        toast.error(
+          `Boxes must be greater than or equal to 230 for: ${productNames}`
+        );
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
+        return;
+      }
+
       // Validate products
-      const validOrderProducts = Object.values(state.selectedProducts)
+      const validOrderProducts = selectedProductsArray
         .filter(
           (product) =>
             product &&
@@ -1216,9 +1259,9 @@ const CreateOrder = () => {
           "Please select at least one product with minimum 230 boxes and valid price."
         );
         dispatch({
-          type: "SET_ERROR",
-          payload:
-            "Please select at least one product with minimum 230 boxes and valid price.",
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
         });
         return;
       }
@@ -1369,6 +1412,16 @@ const CreateOrder = () => {
     });
   };
 
+  const removeProduct = (productId) => {
+    const updatedProducts = { ...state.selectedProducts };
+    delete updatedProducts[productId];
+    dispatch({
+      type: "SET_FIELD",
+      field: "selectedProducts",
+      value: updatedProducts,
+    });
+  };
+
   const resetPanelAccess = () => {
     dispatch({ type: "RESET" });
     toast.info("Panel access reset");
@@ -1451,7 +1504,16 @@ const CreateOrder = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.values(state.selectedProducts).map((product) => (
-                <div key={product._id} className="border rounded-lg p-4">
+                <div key={product._id} className="border rounded-lg p-4 relative">
+                  {/* Trash Icon */}
+                  <button
+                    onClick={() => removeProduct(product._id)}
+                    className="absolute top-2 right-2 p-2 h-8 w-8 bg-red-500 text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center"
+                    title="Remove Product"
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} className="text-xs" />
+                  </button>
+
                   <div className="flex gap-4">
                     <img
                       src={product.image || "/placeholder-image.jpg"}

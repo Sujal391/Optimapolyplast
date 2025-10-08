@@ -3,6 +3,7 @@ import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import cookies from 'js-cookie';
+import { useNavigate } from "react-router-dom";
 
 
 const Dashboard = () => {
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API,
@@ -158,7 +160,8 @@ const Dashboard = () => {
               {orderStats.map((order, index) => (
                 <motion.div
                   key={index}
-                  className={`p-5 rounded-lg border border-gray-200 bg-white hover:shadow-sm transition border-l-4 ${order.border}`}
+                  onClick={() => navigate(`/orders`)}
+                  className={`cursor-pointer p-5 rounded-lg border border-gray-200 bg-white hover:shadow-sm transition border-l-4 ${order.border}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                 >

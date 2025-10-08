@@ -116,8 +116,8 @@
 //           </div>
 
 //           <div className="flex items-center gap-4">
-//             <select 
-//               className="px-4 py-2 border rounded-md focus:ring focus:ring-blue-200" 
+//             <select
+//               className="px-4 py-2 border rounded-md focus:ring focus:ring-blue-200"
 //               value={productType}
 //               onChange={(e) => handleProductTypeChange(e.target.value)}
 //             >
@@ -125,7 +125,7 @@
 //               <option value="Bottle">Bottle</option>
 //               <option value="Raw Material">Raw Material</option>
 //             </select>
-//             <select 
+//             <select
 //               className="px-4 py-2 border rounded-md focus:ring focus:ring-blue-200"
 //               value={selectedCategory}
 //               onChange={(e) => handleCategoryChange(e.target.value)}
@@ -170,7 +170,7 @@
 //             </div>
 //           )}
 //           {showUploadForm ? (
-//             <UploadForm 
+//             <UploadForm
 //               onClose={() => {
 //                 setShowUploadForm(false);
 //                 setEditingProduct(null);
@@ -189,8 +189,8 @@
 //                 <h3 className="text-xl font-semibold mb-4">Our Quality Products</h3>
 //                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
 //                   {products.map((product) => (
-//                     <ProductCard 
-//                       key={product._id} 
+//                     <ProductCard
+//                       key={product._id}
 //                       product={product}
 //                       onEdit={() => handleEditProduct(product)}
 //                       onDelete={() => handleDeleteProduct(product._id)}
@@ -315,7 +315,7 @@
 //       <h2 className="text-2xl font-bold mb-6">
 //         {editingProduct ? 'Edit Product' : 'Upload New Product'}
 //       </h2>
-      
+
 //       {error && (
 //         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
 //           {error}
@@ -528,18 +528,15 @@
 
 // export default Product;
 
-
-
-
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import cookies from 'js-cookie';
+import cookies from "js-cookie";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import Paginator from "../shared/Paginator";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -548,7 +545,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // const token = localStorage.getItem("token");
-      const token = cookies.get("token");
+    const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -570,6 +567,8 @@ const Product = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12); // 12 products per page for grid layout
 
   const toggleHeaderDropdown = () => setHeaderDropdownOpen(!headerDropdownOpen);
 
@@ -624,7 +623,7 @@ const Product = () => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         // const token = localStorage.getItem("token");
-      const token = cookies.get("token");
+        const token = cookies.get("token");
         if (!token) {
           throw new Error("No authentication token found");
         }
@@ -742,16 +741,67 @@ const Product = () => {
                 <h3 className="text-xl font-semibold mb-4">
                   Our Quality Products
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      onEdit={() => handleEditProduct(product)}
-                      onDelete={() => handleDeleteProduct(product._id)}
-                    />
-                  ))}
-                </div>
+
+                {(() => {
+                  // Pagination logic
+                  const startIndex = (page - 1) * pageSize;
+                  const endIndex = startIndex + pageSize;
+                  const pagedProducts = products.slice(startIndex, endIndex);
+
+                  return (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {pagedProducts.map((product) => (
+                          <ProductCard
+                            key={product._id}
+                            product={product}
+                            onEdit={() => handleEditProduct(product)}
+                            onDelete={() => handleDeleteProduct(product._id)}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Pagination Controls */}
+                      {products.length > 0 && (
+                        <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-700">
+                            Showing {startIndex + 1}–
+                            {Math.min(endIndex, products.length)} of{" "}
+                            {products.length} products
+                          </div>
+                          <Paginator
+                            page={page}
+                            total={products.length}
+                            pageSize={pageSize}
+                            onPageChange={setPage}
+                          />
+                          <div className="flex items-center gap-2">
+                            <label
+                              htmlFor="pageSize"
+                              className="text-sm text-gray-700"
+                            >
+                              Per page:
+                            </label>
+                            <select
+                              id="pageSize"
+                              value={pageSize}
+                              onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                                setPage(1); // Reset to first page when changing page size
+                              }}
+                              className="border border-gray-300 rounded px-2 py-1 text-sm"
+                            >
+                              <option value={8}>8</option>
+                              <option value={12}>12</option>
+                              <option value={16}>16</option>
+                              <option value={24}>24</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </section>
           )}
@@ -841,7 +891,10 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
     }
 
     // Validate offer dates if discounted price is provided
-    if (formData.discountedPrice && (!formData.validFrom || !formData.validTo)) {
+    if (
+      formData.discountedPrice &&
+      (!formData.validFrom || !formData.validTo)
+    ) {
       setError("Please provide validity dates for the discount");
       return;
     }
@@ -867,7 +920,10 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
     formDataToSend.append("bottlesPerBox", Number(formData.bottlesPerBox));
 
     if (formData.discountedPrice) {
-      formDataToSend.append("discountedPrice", Number(formData.discountedPrice));
+      formDataToSend.append(
+        "discountedPrice",
+        Number(formData.discountedPrice)
+      );
     }
     if (formData.validFrom) {
       formDataToSend.append("validFrom", formData.validFrom.toISOString());
@@ -944,9 +1000,7 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
               <div className="mt-4">
                 <img
                   src={
-                    image
-                      ? URL.createObjectURL(image)
-                      : editingProduct.image
+                    image ? URL.createObjectURL(image) : editingProduct.image
                   }
                   alt="Product Preview"
                   className="w-full h-auto rounded-lg"
