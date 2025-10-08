@@ -242,6 +242,7 @@
 
 import React, { useState } from "react";
 import axios from "axios";
+import cookies from 'js-cookie';
 
 // Create an Axios instance with a base URL and request interceptor for auth token.
 // const api = axios.create({
@@ -254,7 +255,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -306,16 +308,25 @@ const Attendance = () => {
     formData.append("selectedDate", today);
     formData.append("checkInImage", checkInImage);
 
+    console.log('Check-in request data:', { selectedDate: today, hasImage: !!checkInImage });
+
     try {
       const response = await api.post("/reception/check-in", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+
+      console.log('Check-in success response:', response.data);
       setSuccessMessageCheckIn(response.data.message);
       setErrorCheckIn("");
       setCheckInImage(null);
     } catch (err) {
+      console.error('Check-in error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data
+      });
       setErrorCheckIn(
         err.response?.data?.error || "Error during check-in"
       );
@@ -330,13 +341,23 @@ const Attendance = () => {
     setLoadingCheckOut(true);
     setErrorCheckOut("");
 
+    console.log('Check-out request data:', { selectedDate: today });
+    console.log('Today value:', today);
+
     try {
       const response = await api.post("/reception/check-out", {
         selectedDate: today,
       });
+      console.log('Check-out success response:', response.data);
       setSuccessMessageCheckOut(response.data.message);
       setErrorCheckOut("");
     } catch (err) {
+      console.error('Check-out error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        headers: err.response?.headers
+      });
       setErrorCheckOut(
         err.response?.data?.error || "Error during check-out"
       );
@@ -346,6 +367,7 @@ const Attendance = () => {
   };
 
   return (
+   <div className="bg-green-100 min-h-screen"> 
     <div className="container mx-auto p-6">
       {/* Title */}
       <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
@@ -355,7 +377,7 @@ const Attendance = () => {
       {/* Flex container for both forms */}
       <div className="flex flex-col md:flex-row justify-center items-start md:space-x-6 space-y-6 md:space-y-0">
         {/* --- Check-In Form --- */}
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full md:w-96">
+        <div className="bg-stone-200 shadow-xl rounded-lg p-8 w-full md:w-96">
           <h2 className="text-2xl font-semibold text-center mb-6">Check-In</h2>
           {errorCheckIn && (
             <p className="text-red-500 text-center mb-4">{errorCheckIn}</p>
@@ -389,7 +411,7 @@ const Attendance = () => {
                 type="file"
                 accept="image/*"
                 onChange={(e) => setCheckInImage(e.target.files[0])}
-                className="w-full p-3 border border-gray-300 rounded-lg"
+                className="w-full p-3 bg-gray-100 border border-gray-300 rounded-lg"
                 required
               />
             </div>
@@ -409,7 +431,7 @@ const Attendance = () => {
         </div>
 
         {/* --- Check-Out Form --- */}
-        <div className="bg-white shadow-xl rounded-lg p-8 w-full md:w-96">
+        <div className="bg-stone-200 shadow-xl rounded-lg p-8 w-full md:w-96">
           <h2 className="text-2xl font-semibold text-center mb-6">
             Check-Out
           </h2>
@@ -452,6 +474,7 @@ const Attendance = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

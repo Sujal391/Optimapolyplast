@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import cookies from "js-cookie";
+import { Button } from "../ui/button";
+import Paginator from "../shared/Paginator";
 
 // const api = axios.create({
 //   baseURL: "https://rewa-project.onrender.com/api",
@@ -15,7 +17,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+    const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token;
     }
@@ -37,7 +40,15 @@ const CreatedUsers = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showStaffPassword, setShowStaffPassword] = useState({});
-  const [roles, setRoles] = useState(["reception", "stock", "dispatch", "marketing", "miscellaneous"]);
+  const [roles, setRoles] = useState([
+    "reception",
+    "stock",
+    "dispatch",
+    "marketing",
+    "miscellaneous",
+  ]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const navigate = useNavigate();
 
   const fetchStaff = async () => {
@@ -47,12 +58,12 @@ const CreatedUsers = () => {
       setStaff(response.data.staff);
       // Initialize password visibility state for each staff member
       const initialPasswordVisibility = {};
-      response.data.staff.forEach(member => {
+      response.data.staff.forEach((member) => {
         initialPasswordVisibility[member._id] = false;
       });
       setShowStaffPassword(initialPasswordVisibility);
     } catch (err) {
-      console.error('Fetch Error:', err);
+      console.error("Fetch Error:", err);
       if (err.response?.status === 401) {
         setError("Session expired. Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
@@ -72,18 +83,25 @@ const CreatedUsers = () => {
     e.preventDefault();
 
     const profileData = { name, email, phoneNumber: phone, password, role };
-    console.log('Profile Data:', profileData);
+    console.log("Profile Data:", profileData);
 
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+    const token = cookies.get("token");
     if (!token) {
-      setToastMessage({ message: "Authorization token missing or expired.", type: "error" });
+      setToastMessage({
+        message: "Authorization token missing or expired.",
+        type: "error",
+      });
       navigate("/login");
       return;
     }
 
     try {
       const response = await api.post("/auth/register/staff", profileData);
-      setToastMessage({ message: "Staff added successfully!", type: "success" });
+      setToastMessage({
+        message: "Staff added successfully!",
+        type: "success",
+      });
       fetchStaff();
       setIsModalOpen(false);
       // Clear form fields
@@ -93,7 +111,7 @@ const CreatedUsers = () => {
       setPassword("");
       setRole("");
     } catch (error) {
-      console.error('Error:', error.response || error);
+      console.error("Error:", error.response || error);
       setToastMessage({
         message: error.response?.data?.message || "Failed to add staff.",
         type: "error",
@@ -105,19 +123,22 @@ const CreatedUsers = () => {
     if (window.confirm("Are you sure you want to delete this staff member?")) {
       try {
         await api.delete(`/admin/staff/${id}`);
-        setToastMessage({ message: "Staff deleted successfully!", type: "success" });
+        setToastMessage({
+          message: "Staff deleted successfully!",
+          type: "success",
+        });
         fetchStaff();
       } catch (error) {
-        console.error('Delete Error:', error);
+        console.error("Delete Error:", error);
         setToastMessage({ message: "Failed to delete staff.", type: "error" });
       }
     }
   };
 
   const togglePasswordVisibility = (memberId) => {
-    setShowStaffPassword(prev => ({
+    setShowStaffPassword((prev) => ({
       ...prev,
-      [memberId]: !prev[memberId]
+      [memberId]: !prev[memberId],
     }));
   };
 
@@ -130,7 +151,6 @@ const CreatedUsers = () => {
 
   return (
     <div className="flex">
- 
       <div className="w-64 bg-gray-800 text-white h-screen">
         <Sidebar />
       </div>
@@ -138,9 +158,12 @@ const CreatedUsers = () => {
       <div className="flex-1 p-4 rounded-3xl">
         <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-xl mt-6">
           <div className="flex items-center justify-between p-6 border-b bg-blue-700">
-            <h1 className="text-3xl text-white">Created Panels</h1>
-            <button onClick={() => setIsModalOpen(true)} className="bg-white text-black py-2 px-4 rounded-lg hover:bg-blue-200">
-              ➕ Create New User
+            <h1 className="text-3xl text-white">Created Panel Users</h1>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-white text-black py-2 px-4 rounded-lg hover:bg-blue-200"
+            >
+              ➕ Create New Panel User
             </button>
           </div>
 
@@ -157,13 +180,19 @@ const CreatedUsers = () => {
                 </tr>
               </thead>
               <tbody>
-                {staff.map((member) => (
-                  <tr key={member._id} className="border-t">
-                    <td className="px-4 py-2">{member.name}</td>
-                    <td className="px-4 py-2">{member.email}</td>
-                    <td className="px-4 py-2 t">{member.phoneNumber}</td>
-                    <td className="px-4 py-2 t">{member.role}</td>
-                    {/* <td className="px-4 py-2"> */}
+                {(() => {
+                  // Pagination logic
+                  const startIndex = (page - 1) * pageSize;
+                  const endIndex = startIndex + pageSize;
+                  const pagedStaff = staff.slice(startIndex, endIndex);
+
+                  return pagedStaff.map((member) => (
+                    <tr key={member._id} className="border-t">
+                      <td className="px-4 py-2">{member.name}</td>
+                      <td className="px-4 py-2">{member.email}</td>
+                      <td className="px-4 py-2 t">{member.phoneNumber}</td>
+                      <td className="px-4 py-2 t">{member.role}</td>
+                      {/* <td className="px-4 py-2"> */}
                       {/* <div className="flex items-center">
                         <span className="mr-2">
                           {showStaffPassword[member._id] ? member.password : '••••••••'}
@@ -175,22 +204,63 @@ const CreatedUsers = () => {
                           {showStaffPassword[member._id] ? <FaEyeSlash /> : <FaEye />}
                         </button>
                       </div> */}
-                    {/* </td> */}
-                    <td className="px-4 py-2">
-                      {/* <button className=" hover:underline">✏️</button> */}
-                      <button onClick={() => handleDelete(member._id)} className="ml-0 text-red-500 bg-red-200 hover:bg-red-400 hover:text-red-700 px-3 py-2 rounded-lg">
-                    Delete🗑️
-                      </button>
-
-                    </td>
-                  </tr>
-                ))}
+                      {/* </td> */}
+                      <td className="px-4 py-2">
+                        {/* <button className=" hover:underline">✏️</button> */}
+                        <Button
+                          variant="destructive"
+                          onClick={() => handleDelete(member._id)}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
 
+          {/* Pagination Controls */}
+          {staff.length > 0 && (
+            <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 px-6 pb-6 whitespace-nowrap">
+              <div className="text-sm text-gray-700">
+                Showing {(page - 1) * pageSize + 1}–
+                {Math.min(page * pageSize, staff.length)} of {staff.length}{" "}
+                staff members
+              </div>
+              <Paginator
+                page={page}
+                total={staff.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+              />
+              <div className="flex items-center gap-2">
+                <label htmlFor="pageSize" className="text-sm text-gray-700">
+                  Per page:
+                </label>
+                <select
+                  id="pageSize"
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1); // Reset to first page when changing page size
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           {toastMessage && (
-            <div className={`fixed bottom-4 right-4 bg-${toastMessage.type === "success" ? "green" : "red"}-500 text-white px-4 py-2 rounded-lg`}>
+            <div
+              className={`fixed bottom-4 right-4 bg-${toastMessage.type === "success" ? "green" : "red"}-500 text-white px-4 py-2 rounded-lg`}
+            >
               {toastMessage.message}
               <button onClick={closeToast} className="ml-4 text-sm underline">
                 Close
@@ -206,7 +276,12 @@ const CreatedUsers = () => {
             <h2 className="text-xl font-bold mb-4">Add New User</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Name
+                </label>
                 <input
                   type="text"
                   id="name"
@@ -218,7 +293,12 @@ const CreatedUsers = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Email
+                </label>
                 <input
                   type="email"
                   id="email"
@@ -230,7 +310,12 @@ const CreatedUsers = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Phone Number
+                </label>
                 <input
                   type="text"
                   id="phone"
@@ -242,7 +327,12 @@ const CreatedUsers = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -263,7 +353,12 @@ const CreatedUsers = () => {
               </div>
 
               <div className="mb-4">
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">Role</label>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Role
+                </label>
                 <select
                   id="role"
                   className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -273,14 +368,27 @@ const CreatedUsers = () => {
                 >
                   <option value="">Select a role</option>
                   {roles.map((roleOption, index) => (
-                    <option key={index} value={roleOption}>{roleOption}</option>
+                    <option key={index} value={roleOption}>
+                      {roleOption}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="flex justify-end">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="mr-2 text-gray-500">Cancel</button>
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Submit</button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="mr-2 text-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                >
+                  Submit
+                </button>
               </div>
             </form>
           </div>

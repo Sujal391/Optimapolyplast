@@ -324,6 +324,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
+import cookies from 'js-cookie';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -332,7 +333,8 @@ const api = axios.create({
 // Axios Interceptor for Authentication
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -439,7 +441,8 @@ export default function StockManagement() {
       return;
     }
     try {
-      const userId = localStorage.getItem("userId");
+      // const userId = localStorage.getItem("userId");
+      const userId = cookies.get("userId");
       const response = await api.put("/stock/update-quantity", {
         productId: selectedProduct,
         boxes: formData.boxes,
@@ -619,7 +622,7 @@ export default function StockManagement() {
                         <td className="p-2">{entry.boxes}</td>
                         <td className="p-2">{entry.changeType}</td>
                         <td className="p-2">{entry.notes || "N/A"}</td>
-                        <td className="p-2">{new Date(entry.updatedAt).toLocaleString()}</td>
+                        <td className="p-2">{new Date(entry.updatedAt).toLocaleString("en-IN")}</td>
                       </tr>
                     ))}
                   </tbody>

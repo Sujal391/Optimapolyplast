@@ -1,7 +1,5 @@
-
 // import React, { useState, useEffect } from 'react';
 // import axios from 'axios';
-
 
 // const api = axios.create({
 //   baseURL: process.env.REACT_APP_API,
@@ -12,8 +10,8 @@
 //   (config) => {
 //     const token = localStorage.getItem('token');
 //     if (token) {
-//       config.headers.Authorization = token.startsWith('Bearer ') 
-//         ? token 
+//       config.headers.Authorization = token.startsWith('Bearer ')
+//         ? token
 //         : `Bearer ${token}`;
 //     }
 //     return config;
@@ -69,22 +67,22 @@
 //     try {
 //       // Validate selected products before proceeding
 //       const validOrderProducts = selectedProducts.filter(product => product && product._id && product.quantity > 0);
-  
+
 //       if (validOrderProducts.length === 0) {
 //         setOrderStatus('Please select at least one product with a valid quantity.');
 //         return;
 //       }
-  
+
 //       const orderProducts = validOrderProducts.map(product => ({
 //         productId: product._id,
 //         quantity: product.quantity,
 //       }));
-  
+
 //       const response = await api.post('/reception/user-panel/orders', {
 //         products: orderProducts,
 //         paymentMethod: 'COD',
 //       });
-  
+
 //       setOrderStatus('Order created successfully: ' + response.data.message);
 //     } catch (error) {
 //       // Improved error handling
@@ -150,8 +148,8 @@
 //             <h3 className="text-2xl font-semibold text-gray-800 mb-6">Products</h3>
 //             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
 //               {products.map((product, index) => (
-//                 <div 
-//                   key={index} 
+//                 <div
+//                   key={index}
 //                   className="bg-gray-100 border p-4 rounded-lg hover:shadow-xl transition-shadow cursor-pointer"
 //                   onClick={() => handleProductClick(product)}
 //                 >
@@ -202,9 +200,6 @@
 // };
 
 // export default CreateOrder;
-
-
-
 
 // import React, { useReducer, useEffect } from 'react';
 // import axios from 'axios';
@@ -273,7 +268,7 @@
 //   <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
 //     <h2 className="text-2xl font-semibold text-gray-800 mb-4">Panel Access</h2>
 //     {state.error && <p className="text-red-500 text-center mb-4">{state.error}</p>}
-    
+
 //     <div className="mb-6">
 //       <h3 className="text-lg font-medium text-gray-700 mb-2">User Panel Access</h3>
 //       <input
@@ -686,7 +681,7 @@
 //           handleUserPanelAccess={handleUserPanelAccess}
 //           handleMiscellaneousPanelAccess={handleMiscellaneousPanelAccess}
 //         />
-        
+
 //         {state.customer && (
 //           <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
 //             <h3 className="text-xl font-semibold text-gray-800">
@@ -738,11 +733,13 @@
 
 // export default CreateOrder;
 
-
-import React, { useReducer, useEffect } from 'react';
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useReducer, useEffect } from "react";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import cookies from "js-cookie";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -750,9 +747,12 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // const token = localStorage.getItem('token');
+    const token = cookies.get("token");
     if (token) {
-      config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      config.headers.Authorization = token.startsWith("Bearer ")
+        ? token
+        : `Bearer ${token}`;
     }
     return config;
   },
@@ -762,123 +762,208 @@ api.interceptors.request.use(
 );
 
 const initialState = {
-  userCode: '',
-  customerInfo: { name: '', email: '', mobileNo: '' },
-  shippingAddress: { address: '', city: '', state: '', pinCode: '' },
-  token: '',
+  userCode: "",
+  customerInfo: { name: "", email: "", mobileNo: "" },
+  shippingAddress: { address: "", city: "", state: "", pinCode: "" },
+  token: "",
   customer: null,
   isMiscellaneous: false,
   products: [],
   selectedProducts: {},
-  orderStatus: '',
-  error: '',
-  deliveryChoice: 'homeDelivery',
-  paymentMethod: 'COD',
+  orderStatus: "",
+  error: "",
+  deliveryChoice: "homeDelivery",
+  paymentMethod: "COD",
   selectedProductDetails: null,
-  isLoading: false,
+  isLoadingUser: false, // separate loading state for User Panel
+  isLoadingMisc: false,
+  isLoadingProducts: false,
+  isLoadingOrder: false,
 };
 
 function reducer(state, action) {
   switch (action.type) {
-    case 'SET_FIELD':
+    case "SET_FIELD":
       return { ...state, [action.field]: action.value };
-    case 'SET_CUSTOMER_INFO':
-      return { ...state, customerInfo: { ...state.customerInfo, [action.field]: action.value } };
-    case 'SET_SHIPPING_ADDRESS':
-      return { ...state, shippingAddress: { ...state.shippingAddress, [action.field]: action.value } };
-    case 'SET_SUCCESS':
-      return { ...state, ...action.payload, isLoading: false, error: '' };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, isLoading: false };
-    case 'SET_LOADING':
-      return { ...state, isLoading: true };
-    case 'RESET':
+    case "SET_CUSTOMER_INFO":
+      return {
+        ...state,
+        customerInfo: { ...state.customerInfo, [action.field]: action.value },
+      };
+    case "SET_SHIPPING_ADDRESS":
+      return {
+        ...state,
+        shippingAddress: {
+          ...state.shippingAddress,
+          [action.field]: action.value,
+        },
+      };
+    case "SET_SUCCESS":
+      return { ...state, ...action.payload, error: "" };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_LOADING_USER":
+      return { ...state, isLoadingUser: action.value };
+    case "SET_LOADING_MISC":
+      return { ...state, isLoadingMisc: action.value };
+    case "RESET":
       return initialState;
+    case "SET_LOADING":
+      return { ...state, [action.field]: action.value };
     default:
       return state;
   }
 }
 
-const PanelAccess = ({ state, dispatch, handleUserPanelAccess, handleMiscellaneousPanelAccess }) => (
-  <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-    <h2 className="text-2xl font-semibold text-gray-800 mb-4">Panel Access</h2>
-    {state.error && <p className="text-red-500 text-center mb-4">{state.error}</p>}
-    
-    <div className="mb-6">
-      <h3 className="text-lg font-medium text-gray-700 mb-2">User Panel Access</h3>
-      <input
-        type="text"
-        placeholder="Enter User Code"
-        value={state.userCode}
-        onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'userCode', value: e.target.value })}
-        className="border p-2 rounded w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        disabled={state.customer}
-      />
-      <button
-        onClick={handleUserPanelAccess}
-        className="mt-2 w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400 transition duration-300"
-        disabled={state.customer || state.isLoading}
-      >
-        {state.isLoading ? 'Accessing...' : 'Access User Panel'}
-      </button>
-    </div>
+const PanelAccess = ({
+  state,
+  dispatch,
+  handleUserPanelAccess,
+  handleMiscellaneousPanelAccess,
+}) => (
+  <div className="bg-stone-200 p-6 rounded-lg shadow-xl mb-6 w-full">
+    <h2 className="text-2xl text-center font-semibold text-gray-800 mb-4">
+      Panel Access
+    </h2>
+    {state.error && (
+      <p className="text-red-500 text-center mb-4">{state.error}</p>
+    )}
 
-    <div className="mb-6">
-      <h3 className="text-lg font-medium text-gray-700 mb-2">Miscellaneous Panel Access</h3>
-      {['name', 'email', 'mobileNo'].map((field) => (
+    <div className="flex w-full gap-6">
+      <div className="flex-1 bg-gray-100 p-6 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-700 mb-2">
+          User Panel Access
+        </h3>
         <input
-          key={field}
-          type={field === 'email' ? 'email' : 'text'}
-          placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === 'mobileNo' ? ' (10 digits)' : ''}`}
-          value={state.customerInfo[field]}
-          onChange={(e) => dispatch({ type: 'SET_CUSTOMER_INFO', field, value: e.target.value })}
-          className="border p-2 rounded w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          type="text"
+          placeholder="Enter User Code"
+          value={state.userCode}
+          onChange={(e) =>
+            dispatch({
+              type: "SET_FIELD",
+              field: "userCode",
+              value: e.target.value,
+            })
+          }
+          className="border p-2 rounded-xl shadow w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           disabled={state.customer}
+          style={state.customer ? { backgroundColor: "white" } : {}}
         />
-      ))}
-      <button
-        onClick={handleMiscellaneousPanelAccess}
-        className="mt-2 w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 disabled:bg-gray-400 transition duration-300"
-        disabled={state.customer || state.isLoading}
-      >
-        {state.isLoading ? 'Accessing...' : 'Access Miscellaneous Panel'}
-      </button>
+        <button
+          onClick={handleUserPanelAccess}
+          className="mt-2 w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400 transition duration-300"
+          disabled={state.customer || state.isLoadingUser}
+        >
+          {state.isLoadingUser ? "Accessing..." : "Access User Panel"}
+        </button>
+      </div>
+
+      {/* Right Column - Miscellaneous Panel Access */}
+      <div className="flex-1 bg-gray-100 p-6 rounded-lg shadow">
+        <h3 className="text-lg font-medium text-gray-700 mb-2">
+          Miscellaneous Panel Access
+        </h3>
+        {["name", "email", "mobileNo"].map((field) => (
+          <input
+            key={field}
+            type={field === "email" ? "email" : "text"}
+            placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === "mobileNo" ? " (10 digits)" : ""}`}
+            value={state.customerInfo[field]}
+            onChange={(e) =>
+              dispatch({
+                type: "SET_CUSTOMER_INFO",
+                field,
+                value: e.target.value,
+              })
+            }
+            className="border p-2 rounded-xl shadow w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={state.customer}
+            style={state.customer ? { backgroundColor: "white" } : {}}
+          />
+        ))}
+        <button
+          onClick={handleMiscellaneousPanelAccess}
+          className="mt-2 w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 disabled:bg-gray-400 transition duration-300"
+          disabled={state.customer || state.isLoadingMisc}
+        >
+          {state.isLoadingMisc ? "Accessing..." : "Access Miscellaneous Panel"}
+        </button>
+      </div>
     </div>
   </div>
 );
 
-const ProductSelection = ({ state, dispatch, handleOrder, handleProductClick }) => (
-  <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-    <h3 className="text-2xl font-semibold text-gray-800 mb-6">Select Products</h3>
+const ProductSelection = ({
+  state,
+  dispatch,
+  handleOrder,
+  handleProductClick,
+}) => (
+  <div className="bg-stone-200 p-6 rounded-lg shadow-xl mb-6">
+    <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+      Select Products
+    </h3>
     {!state.isMiscellaneous && (
       <div className="mb-6">
-        <h4 className="text-lg font-medium text-gray-700 mb-2">Shipping Details</h4>
-        {['address', 'city', 'state', 'pinCode'].map((field) => (
-          <input
-            key={field}
-            type="text"
-            placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === 'pinCode' ? ' (6 digits)' : ''}`}
-            value={state.shippingAddress[field]}
-            onChange={(e) => dispatch({ type: 'SET_SHIPPING_ADDRESS', field, value: e.target.value })}
-            className="border p-2 rounded w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        ))}
-        <select
-          value={state.deliveryChoice}
-          onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'deliveryChoice', value: e.target.value })}
-          className="border p-2 rounded w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="homeDelivery">Home Delivery</option>
-          <option value="companyPickup">Company Pickup</option>
-        </select>
-        <select
-          value={state.paymentMethod}
-          onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'paymentMethod', value: e.target.value })}
-          className="border p-2 rounded w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="COD">Cash on Delivery (COD)</option>
-          <option value="online">Online Payment</option>
-        </select>
+        <h4 className="text-lg font-medium text-gray-700 mb-3">
+          Shipping Details
+        </h4>
+        <div className="grid grid-cols-2 gap-4">
+          {/* Left side: Input fields */}
+          <div>
+            {["address", "city", "state", "pinCode"].map((field) => (
+              <input
+                key={field}
+                type="text"
+                placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${
+                  field === "pinCode" ? " (6 digits)" : ""
+                }`}
+                value={state.shippingAddress[field]}
+                onChange={(e) =>
+                  dispatch({
+                    type: "SET_SHIPPING_ADDRESS",
+                    field,
+                    value: e.target.value,
+                  })
+                }
+                className="border p-2 rounded-xl shadow-xl w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ))}
+          </div>
+
+          {/* Right side: Select fields */}
+          <div>
+            <select
+              value={state.deliveryChoice}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "deliveryChoice",
+                  value: e.target.value,
+                })
+              }
+              className="border p-2 rounded-xl shadow-xl w-full mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="homeDelivery">Home Delivery</option>
+              <option value="companyPickup">Company Pickup</option>
+            </select>
+
+            <select
+              value={state.paymentMethod}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "paymentMethod",
+                  value: e.target.value,
+                })
+              }
+              className="border p-2 rounded-xl shadow-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="COD">Cash on Delivery (COD)</option>
+              <option value="online">Online Payment</option>
+            </select>
+          </div>
+        </div>
       </div>
     )}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -889,10 +974,12 @@ const ProductSelection = ({ state, dispatch, handleOrder, handleProductClick }) 
           onClick={() => handleProductClick(product)}
         >
           <img
-            src={product.image || '/placeholder-image.jpg'}
+            src={product.image || "/placeholder-image.jpg"}
             alt={product.name}
             className="w-full h-56 object-cover rounded mb-4"
-            onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
+            onError={(e) => {
+              e.target.src = "/placeholder-image.jpg";
+            }}
           />
           <p className="text-lg font-semibold text-gray-700">{product.name}</p>
           <p className="text-gray-600">Price: ₹{product.price}</p>
@@ -902,175 +989,265 @@ const ProductSelection = ({ state, dispatch, handleOrder, handleProductClick }) 
             min="230"
             step="1"
             placeholder="Boxes (min 230)"
-            value={state.selectedProducts[product._id]?.boxes || ''}
+            value={state.selectedProducts[product._id]?.boxes || ""}
             onChange={(e) => {
-              const boxes = parseInt(e.target.value, 10);
-              if (boxes < 230 && e.target.value !== '') {
-                toast.error(`Boxes for ${product.name} must be at least 230.`);
+              const inputValue = e.target.value;
+
+              // If input is cleared, remove the product from selected products
+              if (inputValue === "" || inputValue === null) {
+                const updatedProducts = { ...state.selectedProducts };
+                delete updatedProducts[product._id];
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "selectedProducts",
+                  value: updatedProducts,
+                });
                 return;
               }
+
+              const boxes = parseInt(inputValue, 10);
               dispatch({
-                type: 'SET_FIELD',
-                field: 'selectedProducts',
+                type: "SET_FIELD",
+                field: "selectedProducts",
                 value: {
                   ...state.selectedProducts,
                   [product._id]: {
                     ...product,
                     boxes: boxes || undefined,
-                    price: state.selectedProducts[product._id]?.price || product.price
-                  }
-                }
+                    price:
+                      state.selectedProducts[product._id]?.price ||
+                      product.price,
+                  },
+                },
               });
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <input
+          {/* <input
             type="number"
             min="0"
             step="0.01"
             placeholder="Enter Price"
-            value={state.selectedProducts[product._id]?.price || ''}
+            value={state.selectedProducts[product._id]?.price || ""}
             onChange={(e) => {
               const price = parseFloat(e.target.value);
-              if (price < 0 && e.target.value !== '') {
+              if (price < 0 && e.target.value !== "") {
                 toast.error(`Price for ${product.name} cannot be negative.`);
                 return;
               }
               dispatch({
-                type: 'SET_FIELD',
-                field: 'selectedProducts',
+                type: "SET_FIELD",
+                field: "selectedProducts",
                 value: {
                   ...state.selectedProducts,
                   [product._id]: {
                     ...product,
                     price: price || undefined,
-                    boxes: state.selectedProducts[product._id]?.boxes || 230
-                  }
-                }
+                    boxes: state.selectedProducts[product._id]?.boxes || 230,
+                  },
+                },
               });
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          /> */}
         </div>
       ))}
     </div>
     <button
       onClick={handleOrder}
       className="mt-4 w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 disabled:bg-gray-400 transition duration-300"
-      disabled={!state.customer || Object.keys(state.selectedProducts).length === 0 || state.isLoading}
+      disabled={
+        !state.customer ||
+        Object.keys(state.selectedProducts).length === 0 ||
+        state.isLoadingOrder
+      }
     >
-      {state.isLoading ? 'Creating Order...' : 'Create Order'}
+      {state.isLoadingOrder ? "Creating Order..." : "Create Order"}
     </button>
-    {state.error && <p className="text-red-500 text-center mt-4">{state.error}</p>}
+    {state.error && (
+      <p className="text-red-500 text-center mt-4">{state.error}</p>
+    )}
   </div>
 );
 
-const ProductDetails = ({ product }) => (
-  <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-    <h3 className="text-3xl font-semibold text-gray-800 mb-6">Product Details</h3>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div>
-        <img
-          src={product.image || '/placeholder-image.jpg'}
-          alt={product.name}
-          className="w-full h-80 object-cover rounded-lg mb-4"
-          onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
-        />
-      </div>
-      <div>
-        <p className="text-2xl font-semibold text-gray-700 mb-4">Name: {product.name}</p>
-        <p className="text-xl text-gray-600 mb-4">Price: ₹{product.price}</p>
-        <p className="text-lg text-gray-600 mb-4">Category: {product.category || 'N/A'}</p>
-        <p className="text-lg text-gray-600 mb-4">Boxes: {product.boxes}</p>
-        <p className="text-lg text-gray-600 mb-4">Bottles per Box: {product.bottlesPerBox || 'N/A'}</p>
-        <p className="text-lg text-gray-700 mb-4">{product.description || 'No description available'}</p>
-      </div>
-    </div>
-  </div>
-);
+// const ProductDetails = ({ product }) => (
+//   <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
+//     <h3 className="text-3xl font-semibold text-gray-800 mb-6">Product Details</h3>
+//     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//       <div>
+//         <img
+//           src={product.image || '/placeholder-image.jpg'}
+//           alt={product.name}
+//           className="w-full h-80 object-cover rounded-lg mb-4"
+//           onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
+//         />
+//       </div>
+//       <div>
+//         <p className="text-2xl font-semibold text-gray-700 mb-4">Name: {product.name}</p>
+//         <p className="text-xl text-gray-600 mb-4">Price: ₹{product.price}</p>
+//         <p className="text-lg text-gray-600 mb-4">Category: {product.category || 'N/A'}</p>
+//         <p className="text-lg text-gray-600 mb-4">Boxes: {product.boxes}</p>
+//         <p className="text-lg text-gray-600 mb-4">Bottles per Box: {product.bottlesPerBox || 'N/A'}</p>
+//         <p className="text-lg text-gray-700 mb-4">{product.description || 'No description available'}</p>
+//       </div>
+//     </div>
+//   </div>
+// );
 
 const CreateOrder = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const handleUserPanelAccess = async () => {
     if (!state.userCode) {
-      toast.error('User code is required.');
-      dispatch({ type: 'SET_ERROR', payload: 'User code is required.' });
+      toast.error("User code is required.");
+      dispatch({ type: "SET_ERROR", payload: "User code is required." });
       return;
     }
-    dispatch({ type: 'SET_LOADING' });
+    dispatch({ type: "SET_LOADING", field: "isLoadingUser", value: true });
     try {
-      const response = await api.post('/reception/user-panel-access', { userCode: state.userCode });
+      const response = await api.post("/reception/user-panel-access", {
+        userCode: state.userCode,
+      });
       dispatch({
-        type: 'SET_SUCCESS',
+        type: "SET_SUCCESS",
         payload: {
           token: response.data.token,
           customer: response.data.customer,
           isMiscellaneous: false,
-        }
+        },
       });
-      localStorage.setItem('token', response.data.token);
-      toast.success('User panel access granted');
+      // localStorage.setItem('token', response.data.token);
+      cookies.set("token", response.data.token);
+      toast.success("User panel access granted");
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Error accessing user panel';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        "Error accessing user panel";
       toast.error(errorMessage);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+    } finally {
+      dispatch({ type: "SET_LOADING", field: "isLoadingUser", value: false });
     }
   };
 
   const handleMiscellaneousPanelAccess = async () => {
     const { name, email, mobileNo } = state.customerInfo;
     if (!name || !mobileNo) {
-      toast.error('Name and mobile number are required.');
-      dispatch({ type: 'SET_ERROR', payload: 'Name and mobile number are required.' });
+      toast.error("Name and mobile number are required.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Name and mobile number are required.",
+      });
       return;
     }
     if (!/^\d{10}$/.test(mobileNo)) {
-      toast.error('Mobile number must be 10 digits.');
-      dispatch({ type: 'SET_ERROR', payload: 'Mobile number must be 10 digits.' });
+      toast.error("Mobile number must be 10 digits.");
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Mobile number must be 10 digits.",
+      });
       return;
     }
-    dispatch({ type: 'SET_LOADING' });
+    dispatch({ type: "SET_LOADING", field: "isLoadingMisc", value: true });
     try {
-      const response = await api.post('/reception/miscellaneous-panel-access', { name, email, mobileNo });
+      const response = await api.post("/reception/miscellaneous-panel-access", {
+        name,
+        email,
+        mobileNo,
+      });
       dispatch({
-        type: 'SET_SUCCESS',
+        type: "SET_SUCCESS",
         payload: {
           token: response.data.token,
           customer: response.data.customer,
           isMiscellaneous: true,
-        }
+        },
       });
-      localStorage.setItem('token', response.data.token);
-      toast.success('Miscellaneous panel access granted');
+      // localStorage.setItem('token', response.data.token);
+      cookies.set("token", response.data.token);
+      toast.success("Miscellaneous panel access granted");
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Error accessing miscellaneous panel';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        "Error accessing miscellaneous panel";
       toast.error(errorMessage);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+    } finally {
+      dispatch({ type: "SET_LOADING", field: "isLoadingMisc", value: false });
     }
   };
 
   const fetchProducts = async () => {
-    dispatch({ type: 'SET_LOADING' });
+    dispatch({ type: "SET_LOADING", field: "isLoadingProducts", value: true });
     try {
-      const response = await api.get('/reception/user-panel/products');
+      const response = await api.get("/reception/user-panel/products");
       dispatch({
-        type: 'SET_SUCCESS',
-        payload: { products: response.data.products }
+        type: "SET_SUCCESS",
+        payload: { products: response.data.products },
       });
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Error fetching products';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        "Error fetching products";
       toast.error(errorMessage);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+    } finally {
+      dispatch({
+        type: "SET_LOADING",
+        field: "isLoadingProducts",
+        value: false,
+      });
     }
   };
 
   const handleOrder = async () => {
-    dispatch({ type: 'SET_LOADING' });
+    dispatch({ type: "SET_LOADING", field: "isLoadingOrder", value: true });
     try {
+      // Check if any products are selected
+      const selectedProductsArray = Object.values(state.selectedProducts);
+
+      if (selectedProductsArray.length === 0) {
+        toast.error("Please select at least one product.");
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
+        return;
+      }
+
+      // Validate each product for minimum boxes requirement
+      const invalidProducts = selectedProductsArray.filter(
+        (product) => !product.boxes || product.boxes < 230
+      );
+
+      if (invalidProducts.length > 0) {
+        const productNames = invalidProducts.map(p => p.name).join(", ");
+        toast.error(
+          `Boxes must be greater than or equal to 230 for: ${productNames}`
+        );
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
+        return;
+      }
+
       // Validate products
-      const validOrderProducts = Object.values(state.selectedProducts)
-        .filter((product) => product && product._id && product.boxes >= 230 && product.price >= 0 && !isNaN(product.boxes) && !isNaN(product.price))
+      const validOrderProducts = selectedProductsArray
+        .filter(
+          (product) =>
+            product &&
+            product._id &&
+            product.boxes >= 230 &&
+            product.price >= 0 &&
+            !isNaN(product.boxes) &&
+            !isNaN(product.price)
+        )
         .map((product) => ({
           productId: product._id,
           boxes: product.boxes,
@@ -1078,22 +1255,33 @@ const CreateOrder = () => {
         }));
 
       if (validOrderProducts.length === 0) {
-        toast.error('Please select at least one product with minimum 230 boxes and valid price.');
-        dispatch({ type: 'SET_ERROR', payload: 'Please select at least one product with minimum 230 boxes and valid price.' });
+        toast.error(
+          "Please select at least one product with minimum 230 boxes and valid price."
+        );
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
         return;
       }
 
       // Prepare payload based on user type
       let payload;
-      
+
       if (state.isMiscellaneous) {
         // Payload for miscellaneous users
         payload = {
           products: validOrderProducts,
           paymentMethod: state.paymentMethod,
-          deliveryChoice: 'companyPickup',
-          shippingAddress: { address: 'Miscellaneous Customer', city: 'Ahmedabad', state: 'Gujarat', pinCode: '380001' },
-          orderStatus: 'pending',
+          deliveryChoice: "companyPickup",
+          shippingAddress: {
+            address: "Miscellaneous Customer",
+            city: "Ahmedabad",
+            state: "Gujarat",
+            pinCode: "380001",
+          },
+          orderStatus: "pending",
         };
       } else {
         // Payload for existing users - using the specified structure
@@ -1101,7 +1289,7 @@ const CreateOrder = () => {
           products: validOrderProducts,
           paymentMethod: state.paymentMethod,
           shippingAddress: state.shippingAddress,
-          deliveryChoice: state.deliveryChoice
+          deliveryChoice: state.deliveryChoice,
         };
         // Note: orderStatus is not included for existing users as per the specified payload
       }
@@ -1117,40 +1305,57 @@ const CreateOrder = () => {
       if (state.isMiscellaneous) {
         const { name, mobileNo } = state.customerInfo;
         if (!name || !mobileNo) {
-          toast.error('Name and mobile number are required for miscellaneous orders.');
-          dispatch({ type: 'SET_ERROR', payload: 'Name and mobile number are required for miscellaneous orders.' });
+          toast.error(
+            "Name and mobile number are required for miscellaneous orders."
+          );
+          dispatch({
+            type: "SET_ERROR",
+            payload:
+              "Name and mobile number are required for miscellaneous orders.",
+          });
           return;
         }
         payload.name = name;
         payload.mobileNo = mobileNo;
       } else {
         // Validate shipping address for non-miscellaneous orders
-        const { address, city, state: addressState, pinCode } = state.shippingAddress;
+        const {
+          address,
+          city,
+          state: addressState,
+          pinCode,
+        } = state.shippingAddress;
         if (!address || !city || !addressState || !pinCode) {
-          toast.error('Complete shipping address with pin code is required.');
-          dispatch({ type: 'SET_ERROR', payload: 'Complete shipping address with pin code is required.' });
+          toast.error("Complete shipping address with pin code is required.");
+          dispatch({
+            type: "SET_ERROR",
+            payload: "Complete shipping address with pin code is required.",
+          });
           return;
         }
         if (!/^\d{6}$/.test(pinCode)) {
-          toast.error('Pin code must be 6 digits.');
-          dispatch({ type: 'SET_ERROR', payload: 'Pin code must be 6 digits.' });
+          toast.error("Pin code must be 6 digits.");
+          dispatch({
+            type: "SET_ERROR",
+            payload: "Pin code must be 6 digits.",
+          });
           return;
         }
       }
 
       // Make API call
-      const response = await api.post('/reception/user-panel/orders', payload);
-      
+      const response = await api.post("/reception/user-panel/orders", payload);
+
       // Debug logging for response
       // console.log('Backend response:', JSON.stringify(response.data, null, 2));
       // console.log('Order status in response:', response.data.order?.orderStatus);
-      
+
       // If order was created with 'preview' status for existing user, update it to 'processing'
       // if (!state.isMiscellaneous && response.data.order?.orderStatus === 'preview') {
       //   try {
       //     console.log('Updating order status from preview to processing...');
-      //     const updateResponse = await api.patch(`/reception/orders/${response.data.order._id}/status`, { 
-      //       status: 'processing' 
+      //     const updateResponse = await api.patch(`/reception/orders/${response.data.order._id}/status`, {
+      //       status: 'processing'
       //     });
       //     console.log('Status update response:', updateResponse.data);
       //     toast.success(`Order created and status updated to processing successfully`);
@@ -1161,37 +1366,65 @@ const CreateOrder = () => {
       // } else {
       //   toast.success(`Order created successfully`);
       // }
-      
+
       // Handle success
       dispatch({
-        type: 'SET_SUCCESS',
+        type: "SET_SUCCESS",
         payload: {
           selectedProducts: {},
+          selectedProductDetails: null,
           shippingAddress: initialState.shippingAddress,
-          deliveryChoice: 'homeDelivery',
-          paymentMethod: 'COD',
-          customerInfo: state.isMiscellaneous ? initialState.customerInfo : state.customerInfo,
+          deliveryChoice: "homeDelivery",
+          paymentMethod: "COD",
+          customerInfo: state.isMiscellaneous
+            ? initialState.customerInfo
+            : state.customerInfo,
           customer: state.isMiscellaneous ? null : state.customer,
-          token: state.isMiscellaneous ? '' : state.token,
-          isMiscellaneous: state.isMiscellaneous ? false : state.isMiscellaneous,
-        }
+          token: state.isMiscellaneous ? "" : state.token,
+          isMiscellaneous: state.isMiscellaneous
+            ? false
+            : state.isMiscellaneous,
+        },
       });
-      toast.success(`Order created successfully`);
+      if (state.isMiscellaneous) {
+        resetPanelAccess();
+        toast.success(`Order created successfully`);
+      } else {
+        toast.success(`Order created successfully`);
+      }
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Error creating order';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        "Error creating order";
       toast.error(errorMessage);
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: "SET_ERROR", payload: errorMessage });
+    } finally {
+      dispatch({ type: "SET_LOADING", field: "isLoadingOrder", value: false });
     }
   };
 
   const handleProductClick = (product) => {
-    dispatch({ type: 'SET_FIELD', field: 'selectedProductDetails', value: product });
+    dispatch({
+      type: "SET_FIELD",
+      field: "selectedProductDetails",
+      value: product,
+    });
+  };
+
+  const removeProduct = (productId) => {
+    const updatedProducts = { ...state.selectedProducts };
+    delete updatedProducts[productId];
+    dispatch({
+      type: "SET_FIELD",
+      field: "selectedProducts",
+      value: updatedProducts,
+    });
   };
 
   const resetPanelAccess = () => {
-    dispatch({ type: 'RESET' });
-    // localStorage.removeItem('token');
-    toast.info('Panel access reset');
+    dispatch({ type: "RESET" });
+    toast.info("Panel access reset");
   };
 
   useEffect(() => {
@@ -1199,9 +1432,17 @@ const CreateOrder = () => {
   }, [state.token]);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} closeOnClick pauseOnHover />
-      <h1 className="text-4xl font-bold text-center text-blue-600 mb-8">Create Order By Reception Panel</h1>
+    <div className="p-6 bg-green-100 min-h-screen">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+      />
+      <h1 className="text-4xl font-bold text-center text-blue-900 mb-8">
+        Create Order By Reception Panel
+      </h1>
       <div className="max-w-6xl mx-auto">
         <PanelAccess
           state={state}
@@ -1209,26 +1450,37 @@ const CreateOrder = () => {
           handleUserPanelAccess={handleUserPanelAccess}
           handleMiscellaneousPanelAccess={handleMiscellaneousPanelAccess}
         />
-        
+
         {state.customer && (
-          <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-            <h3 className="text-xl font-semibold text-gray-800">
-              {state.customer.name} {state.customer.firmName ? `(${state.customer.firmName})` : ''}
-              {state.isMiscellaneous && ' (Miscellaneous)'}
-            </h3>
-            <p className="text-gray-600">Email: {state.customer.email}</p>
-            {state.customer.mobileNo && <p className="text-gray-600">Mobile: {state.customer.mobileNo}</p>}
-            {state.customer.userCode && <p className="text-gray-600">User Code: {state.customer.userCode}</p>}
-            <div className="mt-2 flex space-x-2">
+          <div className="bg-[#e5e3de] p-6 rounded-lg shadow-xl mb-6">
+            <div className="flex flex-col gap-3">
+              <h3 className="text-xl text-gray-800">
+                {" "}
+                Name: {state.customer.name}{" "}
+                {state.isMiscellaneous && " (Miscellaneous)"}
+              </h3>
+              <p className="text-gray-600">Email: {state.customer.email}</p>
+              {state.customer.mobileNo && (
+                <p className="text-gray-600">
+                  Mobile: {state.customer.mobileNo}
+                </p>
+              )}
+              {state.customer.userCode && (
+                <p className="text-gray-600">
+                  User Code: {state.customer.userCode}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex gap-3 w-1/4">
               <button
                 onClick={fetchProducts}
-                className="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600 transition duration-300"
+                className="w-full bg-purple-500 text-white p-2 rounded-lg shadow-xl hover:bg-purple-600 transition duration-300"
               >
                 Fetch Products
               </button>
               <button
                 onClick={resetPanelAccess}
-                className="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-300"
+                className="w-full bg-red-500 text-white p-2 rounded-lg shadow-xl hover:bg-red-600 transition duration-300"
               >
                 Exit Panel
               </button>
@@ -1245,12 +1497,65 @@ const CreateOrder = () => {
           />
         )}
 
-        {state.selectedProductDetails && (
-          <ProductDetails product={state.selectedProductDetails} />
+        {Object.keys(state.selectedProducts).length > 0 && (
+          <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">
+              Selected Product Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.values(state.selectedProducts).map((product) => (
+                <div key={product._id} className="border rounded-lg p-4 relative">
+                  {/* Trash Icon */}
+                  <button
+                    onClick={() => removeProduct(product._id)}
+                    className="absolute top-2 right-2 p-2 h-8 w-8 bg-red-500 text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center"
+                    title="Remove Product"
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} className="text-xs" />
+                  </button>
+
+                  <div className="flex gap-4">
+                    <img
+                      src={product.image || "/placeholder-image.jpg"}
+                      alt={product.name}
+                      className="w-32 h-32 object-cover rounded"
+                      onError={(e) => {
+                        e.target.src = "/placeholder-image.jpg";
+                      }}
+                    />
+                    <div>
+                      <p className="font-semibold text-gray-800">
+                        {product.name}
+                      </p>
+                      <p className="text-gray-600">Price: ₹{product.price}</p>
+                      <p className="text-gray-600">Boxes: {product.boxes}</p>
+                      {product.category && (
+                        <p className="text-gray-600">
+                          Category: {product.category}
+                        </p>
+                      )}
+                      {product.bottlesPerBox && (
+                        <p className="text-gray-600">
+                          Bottles per Box: {product.bottlesPerBox}
+                        </p>
+                      )}
+                      {product.description && (
+                        <p className="text-gray-600 mt-1">
+                          {product.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {state.orderStatus && (
-          <p className={`mt-4 text-center ${state.orderStatus.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
+          <p
+            className={`mt-4 text-center ${state.orderStatus.includes("successfully") ? "text-green-600" : "text-red-600"}`}
+          >
             {state.orderStatus}
           </p>
         )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import profile from '../../assets/profiles.jpg'
+import cookies from 'js-cookie';
 
 
 const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
@@ -23,7 +24,8 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
   // Request interceptor to add Authorization token if present in localStorage
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
       }
@@ -36,7 +38,8 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
   const fetchProfileData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (!token) {
         setError('No authentication token found. Redirecting to login...');
         setTimeout(() => navigate('/login'), 2000);
@@ -59,7 +62,7 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // Remove the token from localStorage
+    cookies.remove('token'); // Remove the token from localStorage
     navigate('/login'); // Redirect to login page
   };
 
@@ -137,7 +140,7 @@ const Header = ({ isSidebarOpen, searchTerm, setSearchTerm }) => {
                 <strong>Role:</strong> {profileData?.role || 'Admin'}
               </p>
               <p>
-                <strong>Joined:</strong> {new Date(profileData?.createdAt).toLocaleDateString() || 'N/A'}
+                <strong>Joined:</strong> {new Date(profileData?.createdAt).toLocaleDateString("en-IN") || 'N/A'}
               </p>
             </div>
             <div className="mt-4 text-center">

@@ -2,13 +2,16 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import cookies from 'js-cookie';
+import { useNavigate } from "react-router-dom";
+
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const api = axios.create({
     baseURL: process.env.REACT_APP_API,
@@ -16,7 +19,8 @@ const Dashboard = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith("Bearer ")
           ? token
@@ -40,7 +44,7 @@ const Dashboard = () => {
             : "Error fetching stats. Please try again later."
         );
         if (err.response?.status === 401) {
-          localStorage.removeItem("token");
+          cookies.remove("token");
           window.location.href = "/";
         }
         setLoading(false);
@@ -55,15 +59,11 @@ const Dashboard = () => {
           title: "Total Users",
           value: stats.users.total,
           description: `Active: ${stats.users.active}, Inactive: ${stats.users.inactive}`,
-          icon: "👥",
-          gradient: "from-blue-700 to-purple-700", // Matching your code
         },
         {
           title: "Total Products",
           value: stats.products.total,
           description: `Bottles: ${stats.products.bottles}, Raw: ${stats.products.rawMaterials}`,
-          icon: "📦",
-          gradient: "from-blue-700 to-purple-700", // Matching your code
         },
         {
           title: "Total Orders",
@@ -75,20 +75,18 @@ const Dashboard = () => {
             stats.orders.preview +
             stats.orders.processing,
           description: `Shipped: ${stats.orders.shipped}, Pending: ${stats.orders.pending}`,
-          icon: "📋",
-          gradient: "from-blue-700 to-purple-700", // Matching your code
         },
       ]
     : [];
 
   const orderStats = stats
     ? [
-        { status: "Pending", count: stats.orders.pending, color: "bg-yellow-500" },
-        { status: "Confirmed", count: stats.orders.confirmed, color: "bg-blue-500" },
-        { status: "Shipped", count: stats.orders.shipped, color: "bg-indigo-500" },
-        { status: "Cancelled", count: stats.orders.cancelled, color: "bg-red-500" },
-        { status: "Preview", count: stats.orders.preview, color: "bg-gray-500" },
-        { status: "Processing", count: stats.orders.processing, color: "bg-orange-500" },
+        { status: "Pending", count: stats.orders.pending, border: "border-yellow-500", text: "text-yellow-700" },
+        { status: "Confirmed", count: stats.orders.confirmed, border: "border-blue-500", text: "text-blue-700" },
+        { status: "Shipped", count: stats.orders.shipped, border: "border-indigo-500", text: "text-indigo-700" },
+        { status: "Cancelled", count: stats.orders.cancelled, border: "border-red-500", text: "text-red-700" },
+        { status: "Preview", count: stats.orders.preview, border: "border-gray-500", text: "text-gray-700" },
+        { status: "Processing", count: stats.orders.processing, border: "border-orange-500", text: "text-orange-700" },
       ]
     : [];
 
@@ -126,45 +124,23 @@ const Dashboard = () => {
             </motion.div>
           ) : (
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8"
-              initial={{ y: 20, opacity: 0 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6"
+              initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ staggerChildren: 0.2 }}
+              transition={{ staggerChildren: 0.1 }}
             >
               {cards.map((card, index) => (
                 <motion.div
                   key={index}
-                  className={`p-6 rounded-lg shadow-lg bg-gradient-to-br ${card.gradient} text-white transform transition-all hover:scale-105 hover:shadow-2xl flex flex-col`}
-                  initial={{ opacity: 0, y: 20 }}
+                  className="p-5 rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow transition"
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="flex items-center justify-center">
-                    <span className="text-6xl">{card.icon}</span>
+                  <h3 className="text-sm font-medium text-gray-500">{card.title}</h3>
+                  <div className="mt-1 text-3xl font-bold text-gray-900">
+                    {card.value.toLocaleString()}
                   </div>
-                  <div className="flex-1" />
-                  <div className="flex items-center justify-center mb-4">
-                    <h3 className="text-2xl font-semibold">{card.title}</h3>
-                  </div>
-                  <div className="flex items-center justify-center mb-2">
-                    <p className="text-sm text-gray-200">{card.description}</p>
-                  </div>
-                  <motion.div
-                    className="flex items-center justify-center"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  >
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-900 flex items-center justify-center text-white text-4xl font-bold">
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        key={card.value}
-                      >
-                        {card.value.toLocaleString()}
-                      </motion.span>
-                    </div>
-                  </motion.div>
+                  <p className="mt-2 text-sm text-gray-500">{card.description}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -174,41 +150,28 @@ const Dashboard = () => {
         {/* Order Breakdown */}
         {stats && (
           <motion.div
-            className="mt-8 p-6 rounded-xl shadow-lg bg-gradient-to-br from-blue-600 to-purple-700 text-white"
-            initial={{ opacity: 0, y: 20 }}
+            className="mt-8 p-6 rounded-xl border border-gray-200 bg-white shadow-sm"
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.1 }}
           >
-            <h2 className="text-2xl font-bold text-gray-100 mb-6">Order Breakdown</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Order Breakdown</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {orderStats.map((order, index) => (
                 <motion.div
                   key={index}
-                  className={`flex flex-col items-start p-6 rounded-lg shadow-lg transform transition-all hover:scale-105 hover:shadow-xl ${order.color} text-white border-l-4`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  onClick={() => navigate(`/orders`)}
+                  className={`cursor-pointer p-5 rounded-lg border border-gray-200 bg-white hover:shadow-sm transition border-l-4 ${order.border}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <h3 className="text-3xl font-semibold">{order.status}</h3>
-                    <motion.div
-                      className={`flex items-center justify-center w-16 h-16 rounded-full font-bold text-white bg-gradient-to-br from-blue-400 to-purple-900 shadow-lg transform transition-all hover:scale-110 hover:shadow-2xl`}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                    >
-                      <motion.span
-                        className="text-4xl"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        key={order.count}
-                      >
-                        {order.count.toLocaleString()}
-                      </motion.span>
-                    </motion.div>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className={`text-sm font-medium tracking-wide uppercase text-gray-600`}>{order.status}</h3>
+                    <span className="text-2xl font-semibold text-gray-900">
+                      {order.count.toLocaleString()}
+                    </span>
                   </div>
-                  <p className="text-lg mt-3">{`Orders in ${order.status.toLowerCase()} status`}</p>
+                  <p className="text-sm text-gray-500 mt-2">{`Orders in ${order.status.toLowerCase()} status`}</p>
                 </motion.div>
               ))}
             </div>

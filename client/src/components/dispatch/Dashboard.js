@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import profile from '../../assets/profiles.jpg';
 import img from '../../assets/logo1.png';
+import cookies from 'js-cookie';
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -23,7 +24,8 @@ const Navbar = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
       }
@@ -35,7 +37,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        // const token = localStorage.getItem('token');
+      const token = cookies.get("token");
         if (!token) {
           window.location.href = '/login';
           return;
@@ -67,7 +70,7 @@ const Navbar = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    cookies.remove('token');
     window.location.href = '/';
   };
 
@@ -83,29 +86,27 @@ const Navbar = () => {
         <Link to="/dispatch/dashboard" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
             Home
           </Link>
-          <Link to="/attandance/dispatch" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          <Link to="/dispatch/attandance" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
             Attendance
           </Link>
-          <Link to="/user/dispatch" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          <Link to="/dispatch/challan-history" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
              Challan History
           </Link>
-          <Link to="/user/pending-payment" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
-           Pending Payment
+          <Link to="/dispatch/pending-payment" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+           Pending Payments
           </Link>
           <div className="relative" ref={dropdownRef}>
             <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
               Dispatch ▾
             </button>
             {isDropdownOpen && (
-              <div className="absolute mt-2 bg-white text-black rounded-lg shadow-lg w-48">
-                <Link to="/dispatch" className="block px-4 py-2 hover:bg-gray-200">
-                  Processing Order
+              <div className="absolute mt-2 bg-white text-black rounded-lg shadow-lg w-48 z-10">
+                <Link to="/dispatch/processing-orders" className="block px-4 py-2 hover:bg-gray-200">
+                  Processing Orders
                 </Link>
-                <Link to="/order-history-dispatch" className="block px-4 py-2 hover:bg-gray-200">
-                  Order History
+                <Link to="/dispatch/dispatch-history" className="block px-4 py-2 hover:bg-gray-200">
+                  Dispatch History
                 </Link>
-               
-                
               </div>
             )}
           </div>
@@ -147,7 +148,7 @@ const Navbar = () => {
           <p className="text-xl md:text-3xl text-white">
             Manage your Dispatch operations with ease.
           </p>
-          <Link to="/attandance/dispatch" className="mt-4 px-6 py-2 bg-white text-blue-500 rounded-lg hover:bg-gray-200 transition duration-300">
+          <Link to="/dispatch/attandance" className="mt-4 px-6 py-2 bg-white text-blue-500 rounded-lg hover:bg-gray-200 transition duration-300">
             Explore Features
           </Link>
         </motion.div>

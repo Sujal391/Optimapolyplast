@@ -106,7 +106,7 @@
 //                 {/* <th className="py-2 px-4 border-b">Source</th> */}
 //                 <th className="py-2 px-4 border-b">Total Amount</th>
 //                 <th className="py-2 px-4 border-b">Action</th>
-                
+
 //               </tr>
 //             </thead>
 //             <tbody>
@@ -475,6 +475,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import cookies from 'js-cookie';
+import Paginator from '../common/Paginator';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -482,7 +484,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -502,6 +505,10 @@ const DeliveryCharge = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const modalRef = useRef(null);
 
+  // pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Fetch Orders with Pending Payment Status
   const fetchOrdersWithPendingPayments = async () => {
     setLoading(true);
@@ -509,18 +516,18 @@ const DeliveryCharge = () => {
       // Try to fetch from the specific pending endpoint first
       const response = await api.get("/reception/orders/pending");
       const pendingOrders = response.data.orders || [];
-      
+
       // If no orders found, try fetching from history and filter for pending payments
       if (pendingOrders.length === 0) {
         try {
           const historyResponse = await api.get("/reception/orders/history");
           const allOrders = historyResponse.data.orders || [];
-          
+
           // Filter orders with pending payment status
-          const ordersWithPendingPayments = allOrders.filter(order => 
+          const ordersWithPendingPayments = allOrders.filter(order =>
             order.paymentStatus?.toLowerCase() === 'pending'
           );
-          
+
           setPendingOrders(ordersWithPendingPayments);
         } catch (historyErr) {
           console.error('Error fetching from history:', historyErr);
@@ -591,7 +598,14 @@ const DeliveryCharge = () => {
     fetchOrdersWithPendingPayments();
   }, []);
 
+  // derived pagination
+  const total = pendingOrders.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedOrders = pendingOrders.slice(startIdx, endIdx);
+
   return (
+  <div className="bg-green-100 min-h-screen">
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">Delivery Charges Management</h1>
 
@@ -607,10 +621,10 @@ const DeliveryCharge = () => {
 
       <div>
         <h2 className="text-2xl font-semibold mb-6 text-gray-700">Orders with Pending Payments</h2>
-        <div className="overflow-x-auto shadow-lg rounded-lg">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
+            <thead>
+              <tr className="bg-gray-400 text-black">
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Order ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Customer Name</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Email</th>
@@ -627,8 +641,8 @@ const DeliveryCharge = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {pendingOrders.length > 0 ? (
-                pendingOrders.map((order) => {
+              {pagedOrders.length > 0 ? (
+                pagedOrders.map((order) => {
                   const totalAmount = order.products.reduce((sum, item) => {
                     if (item.product && item.product.price) {
                       const quantity = item.quantity ? item.quantity : 1;
@@ -702,6 +716,22 @@ const DeliveryCharge = () => {
             </tbody>
           </table>
         </div>
+        {/* pagination controls */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-600 whitespace-nowrap">
+              Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+            </div>
+            <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={pageSize}
+              onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+            >
+              {[5,10,20,50].map((n) => (
+                <option key={n} value={n}>{n} / page</option>
+              ))}
+            </select>
+          </div>
       </div>
 
       {/* Delivery Charge Popup */}
@@ -755,6 +785,7 @@ const DeliveryCharge = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 

@@ -1,9 +1,8 @@
-
-
+import cookies from "js-cookie";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Sidebar from "../layout/Sidebar";
-
+import Paginator from "../shared/Paginator";
 
 const Users = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -15,6 +14,8 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [popupMessage, setPopupMessage] = useState(null);
   const [popupType, setPopupType] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const toggleHeaderDropdown = () => setHeaderDropdownOpen((prev) => !prev);
 
@@ -28,7 +29,8 @@ const Users = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) {
         config.headers.Authorization = token.startsWith("Bearer ")
           ? token
@@ -71,19 +73,24 @@ const Users = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Pagination logic
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const pagedUsers = filteredUsers.slice(startIndex, endIndex);
+
   const handleStatusToggle = async (userCode, currentStatus) => {
     try {
       if (!userCode) throw new Error("Invalid User ID.");
 
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
-          user.userCode === userCode
-            ? { ...user, isBeingToggled: true }
-            : user
+          user.userCode === userCode ? { ...user, isBeingToggled: true } : user
         )
       );
 
-      const response = await api.patch(`/admin/users/${userCode}/toggle-status`);
+      const response = await api.patch(
+        `/admin/users/${userCode}/toggle-status`
+      );
 
       if (response.status === 200) {
         setUsers((prevUsers) =>
@@ -111,7 +118,9 @@ const Users = () => {
 
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
-          user._userCode === userCode ? { ...user, isBeingToggled: false } : user
+          user._userCode === userCode
+            ? { ...user, isBeingToggled: false }
+            : user
         )
       );
 
@@ -130,7 +139,6 @@ const Users = () => {
           isSidebarOpen ? "ml-64" : "ml-0"
         } p-4`}
       >
-        
         <div className="max-w-7xl mx-auto bg-white shadow-lg rounded-lg p-4">
           {error && (
             <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
@@ -162,26 +170,50 @@ const Users = () => {
                 <table className="min-w-full table-auto border-collapse border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="p-4 border border-gray-300 text-left">User Code</th>
-                      <th className="p-4 border border-gray-300 text-left">Name</th>
-                      <th className="p-4 border border-gray-300 text-left">Email</th>
-                      <th className="p-4 border border-gray-300 text-left">Phone</th>
-                      <th className="p-4 border border-gray-300 text-left">Firm Name</th>
-                      <th className="p-4 border border-gray-300 text-left">Status</th>
-                      <th className="p-4 border border-gray-300 text-left">Created At</th>
-                      <th className="p-4 border border-gray-300 text-left">Action</th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        User Code
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Name
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Email
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Phone
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Firm Name
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Status
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Created At
+                      </th>
+                      <th className="p-4 border border-gray-300 text-left">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsers.map((user) => (
+                    {pagedUsers.map((user) => (
                       <tr key={user._id} className="hover:bg-gray-50">
-                        <td className="p-4 border border-gray-300">{user.userCode}</td>
-                        <td className="p-4 border border-gray-300">{user.name}</td>
-                        <td className="p-4 border border-gray-300">{user.email}</td>
+                        <td className="p-4 border border-gray-300">
+                          {user.userCode}
+                        </td>
+                        <td className="p-4 border border-gray-300">
+                          {user.name}
+                        </td>
+                        <td className="p-4 border border-gray-300">
+                          {user.email}
+                        </td>
                         <td className="p-4 border border-gray-300">
                           {user.phoneNumber}
                         </td>
-                        <td className="p-4 border border-gray-300">{user.firmName}</td>
+                        <td className="p-4 border border-gray-300">
+                          {user.firmName}
+                        </td>
                         <td
                           className={`p-4 border border-gray-300 ${getStatusClass(
                             user.isActive
@@ -212,6 +244,42 @@ const Users = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination Controls */}
+              {filteredUsers.length > 0 && (
+                <div className="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 px-6 pb-6 whitespace-nowrap">
+                  <div className="text-sm text-gray-700">
+                    Showing {startIndex + 1}–
+                    {Math.min(endIndex, filteredUsers.length)} of{" "}
+                    {filteredUsers.length} users
+                  </div>
+                  <Paginator
+                    page={page}
+                    total={filteredUsers.length}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                  />
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="pageSize" className="text-sm text-gray-700">
+                      Per page:
+                    </label>
+                    <select
+                      id="pageSize"
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(1); // Reset to first page when changing page size
+                      }}
+                      className="border border-gray-300 rounded px-2 py-1 text-sm"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -241,4 +309,3 @@ const Users = () => {
 };
 
 export default Users;
-

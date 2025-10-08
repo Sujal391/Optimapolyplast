@@ -1,16 +1,21 @@
-
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Sidebar from '../layout/Sidebar';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import Sidebar from "../layout/Sidebar";
+import cookies from "js-cookie";
 
 const Attendance = () => {
-  const [attendanceData, setAttendanceData] = useState({ attendance: [], summary: {} });
+  const [attendanceData, setAttendanceData] = useState({
+    attendance: [],
+    summary: {},
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    startDate: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 7 days back
-    endDate: new Date().toISOString().split('T')[0],
-    panel: '',
+    startDate: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0], // Default to 7 days back
+    endDate: new Date().toISOString().split("T")[0],
+    panel: "",
     includeImages: false,
   });
   const [zoomedInImage, setZoomedInImage] = useState(null); // State for the zoomed-in image
@@ -23,7 +28,8 @@ const Attendance = () => {
 
   api.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
       if (token) config.headers.Authorization = token;
       return config;
     },
@@ -41,14 +47,20 @@ const Attendance = () => {
       setError(null);
 
       const queryParams = Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => value !== '' && value !== null)
+        Object.entries(filters).filter(
+          ([_, value]) => value !== "" && value !== null
+        )
       );
 
-      const response = await api.get('/admin/attendance', { params: queryParams });
+      const response = await api.get("/admin/attendance", {
+        params: queryParams,
+      });
       setAttendanceData(response.data);
     } catch (error) {
       setError(
-        error.response?.data?.message || error.response?.data?.error || 'Error fetching attendance data'
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Error fetching attendance data"
       );
     } finally {
       setLoading(false);
@@ -74,7 +86,7 @@ const Attendance = () => {
         <div className="text-red-600 text-center">
           <p className="text-lg font-semibold mb-2">Error</p>
           <p>{error}</p>
-          <button 
+          <button
             onClick={fetchAttendance}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -142,7 +154,9 @@ const Attendance = () => {
             </select>
           </div>
           <div>
-            <label className="block text-lg font-medium mb-1">Include Images</label>
+            <label className="block text-lg font-medium mb-1">
+              Include Images
+            </label>
             <select
               name="includeImages"
               value={filters.includeImages}
@@ -159,7 +173,9 @@ const Attendance = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-200 p-4 rounded-lg">
             <h3 className="text-lg font-medium text-blue-800">Total Records</h3>
-            <p className="text-2xl font-bold text-blue-900">{attendanceData.summary.totalRecords}</p>
+            <p className="text-2xl font-bold text-blue-900">
+              {attendanceData.summary.totalRecords}
+            </p>
           </div>
           <div className="bg-green-200 p-4 rounded-lg">
             <h3 className="text-lg font-medium text-green-800">Total Hours</h3>
@@ -168,13 +184,17 @@ const Attendance = () => {
             </p>
           </div>
           <div className="bg-purple-200 p-4 rounded-lg">
-            <h3 className="text-lg font-medium text-purple-800">Average Hours/Day</h3>
+            <h3 className="text-lg font-medium text-purple-800">
+              Average Hours/Day
+            </h3>
             <p className="text-2xl font-bold text-purple-900">
               {attendanceData.summary.averageHoursPerDay?.toFixed(2)}
             </p>
           </div>
           <div className="bg-yellow-200 p-4 rounded-lg">
-            <h3 className="text-lg font-medium text-yellow-800">Active Panels</h3>
+            <h3 className="text-lg font-medium text-yellow-800">
+              Active Panels
+            </h3>
             <p className="text-2xl font-bold text-yellow-900">
               {Object.keys(attendanceData.summary.byPanel || {}).length}
             </p>
@@ -186,15 +206,31 @@ const Attendance = () => {
           <table className="min-w-full table-auto">
             <thead className="bg-indigo-500">
               <tr>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">User</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Panel</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Date</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Check In</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Check Out</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Hours</th>
-                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Panel
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Check In
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Check Out
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Hours
+                </th>
+                <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                  Status
+                </th>
                 {filters.includeImages && (
-                  <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">Image</th>
+                  <th className="px-6 py-3 text-left text-lg font-large text-white uppercase">
+                    Image
+                  </th>
                 )}
               </tr>
             </thead>
@@ -202,8 +238,12 @@ const Attendance = () => {
               {attendanceData.attendance.map((record, index) => (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-lg font-medium text-gray-900">{record.user?.name}</div>
-                    <div className="text-sm text-blue-500">{record.user?.email}</div>
+                    <div className="text-lg font-medium text-gray-900">
+                      {record.user?.name}
+                    </div>
+                    <div className="text-sm text-blue-500">
+                      {record.user?.email}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-sm font-semibold rounded-full bg-blue-300 text-blue-800">
@@ -211,34 +251,42 @@ const Attendance = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-lg text-black">
-                    {new Date(record.selectedDate).toLocaleDateString()}
+                    {new Date(record.selectedDate).toLocaleDateString("en-IN")}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap  text-lg text-red-500">
                     {new Date(record.checkInTime).toLocaleTimeString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-lg text-red-500">
-                    {record.checkOutTime ? new Date(record.checkOutTime).toLocaleTimeString() : '-'}
+                    {record.checkOutTime
+                      ? new Date(record.checkOutTime).toLocaleTimeString()
+                      : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-lg text-blue-500">
                     {record.totalHours?.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-sm font-semibold rounded-full ${
-                      record.status === 'checked-out' ? 'bg-green-400 text-green-900' : 'bg-yellow-300 text-yellow-900'
-                    }`}>
+                    <span
+                      className={`px-2 inline-flex text-sm font-semibold rounded-full ${
+                        record.status === "checked-out"
+                          ? "bg-green-400 text-green-900"
+                          : "bg-yellow-300 text-yellow-900"
+                      }`}
+                    >
                       {record.status}
                     </span>
                   </td>
                   {filters.includeImages && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       {record.checkInImage ? (
-                        <img 
-                          src={record.checkInImage} 
-                          alt="Check-in" 
+                        <img
+                          src={record.checkInImage}
+                          alt="Check-in"
                           className="h-10 w-10 rounded-full cursor-pointer"
                           onClick={() => openImageModal(record.checkInImage)} // Open image on click
                         />
-                      ) : '-'}
+                      ) : (
+                        "-"
+                      )}
                     </td>
                   )}
                 </tr>
@@ -249,18 +297,18 @@ const Attendance = () => {
 
         {/* Image Modal */}
         {zoomedInImage && (
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             onClick={closeImageModal} // Close modal on overlay click
           >
             <div className="relative">
-              <img 
-                src={zoomedInImage} 
-                alt="Zoomed Image" 
+              <img
+                src={zoomedInImage}
+                alt="Zoomed Image"
                 className="max-w-full max-h-screen object-contain"
               />
-              <button 
-                className="absolute top-0 right-0 m-4 text-white text-2xl" 
+              <button
+                className="absolute top-0 right-0 m-4 text-white text-2xl"
                 onClick={closeImageModal}
               >
                 &times;
@@ -274,4 +322,3 @@ const Attendance = () => {
 };
 
 export default Attendance;
-

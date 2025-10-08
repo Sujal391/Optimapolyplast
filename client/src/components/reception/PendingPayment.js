@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import cookies from 'js-cookie';
+import Paginator from '../common/Paginator';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -7,7 +9,8 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    // const token = localStorage.getItem("token");
+      const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -27,6 +30,11 @@ const PendingPayment = () => {
     details: [],
     paymentId: null
   });
+
+  // pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
 
   // Fetch Pending Payments
   const fetchPendingPayments = async () => {
@@ -93,20 +101,27 @@ const PendingPayment = () => {
     fetchPendingPayments();
   }, []);
 
+  // derived pagination
+  const total = pendingPayments.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedPayments = pendingPayments.slice(startIdx, endIdx);
+
   return (
+  <div className="min-h-screen bg-green-100">
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Pending Payments</h1>
-      
+      <h1 className="text-3xl font-bold text-center mb-6">Pending Payments</h1>
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
       )}
-      
+
       {loading && (
-        <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+        <p className="bg-blue-100 border border-blue-400 text-blue-700 text-center px-4 py-3 rounded mb-4">
           Loading pending payments...
-        </div>
+        </p>
       )}
 
       <div className="mb-4">
@@ -116,11 +131,11 @@ const PendingPayment = () => {
             Total: {pendingPayments.length} payments
           </div>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow">
-            <thead className="bg-gray-50">
-              <tr>
+
+        <div className="overflow-x-auto shadow-xl rounded-xl">
+          <table className="min-w-full bg-stone-100 border">
+            <thead className=" text-black">
+              <tr className="bg-gray-400">
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Payment ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Order ID</th>
                 <th className="py-3 px-4 border-b text-left text-sm font-medium text-gray-600">Customer Info</th>
@@ -134,10 +149,10 @@ const PendingPayment = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {pendingPayments.length > 0 ? (
-                pendingPayments.map((payment) => (
-                  <tr 
-                    key={payment.paymentId} 
+              {pagedPayments.length > 0 ? (
+                pagedPayments.map((payment) => (
+                  <tr
+                    key={payment.paymentId}
                     className={`hover:bg-gray-50 transition-colors ${
                       hasPriceUpdates(payment) ? 'bg-yellow-50 border-l-4 border-l-yellow-400' : ''
                     }`}
@@ -145,7 +160,7 @@ const PendingPayment = () => {
                     <td className="py-3 px-4 text-sm text-gray-900">
                       {payment.paymentId}
                       {hasPriceUpdates(payment) && (
-                        <span 
+                        <span
                           className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 cursor-pointer hover:bg-yellow-200"
                           onClick={() => showPriceUpdateDetails(payment)}
                         >
@@ -213,6 +228,22 @@ const PendingPayment = () => {
             </tbody>
           </table>
         </div>
+        {/* pagination controls */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600 whitespace-nowrap">
+            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+          </div>
+          <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={pageSize}
+            onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+          >
+            {[5,10,20,50].map((n) => (
+              <option key={n} value={n}>{n} / page</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Price Update Modal */}
@@ -228,7 +259,7 @@ const PendingPayment = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-700 mb-2">
                 The following payment amounts have been updated for Payment ID: <strong>{priceUpdateModal.paymentId}</strong>
@@ -256,7 +287,7 @@ const PendingPayment = () => {
 
             <div className="bg-blue-50 border border-blue-200 p-3 rounded mb-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> The payment amounts have been automatically updated to reflect the new prices. 
+                <strong>Note:</strong> The payment amounts have been automatically updated to reflect the new prices.
                 The customer will be charged the updated amount.
               </p>
             </div>
@@ -273,7 +304,8 @@ const PendingPayment = () => {
         </div>
       )}
     </div>
+  </div>
   );
 };
 
-export default PendingPayment; 
+export default PendingPayment;
