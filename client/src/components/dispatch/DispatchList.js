@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaDownload, FaPrint, FaTimes, FaCheck, FaSync } from "react-icons/fa";
 import logo from '../../assets/logo1.png';
 import cookies from 'js-cookie';
+import OrderActions from './OrderActions';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -45,6 +46,7 @@ const DispatchComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showChallanModal, setShowChallanModal] = useState(false);
   const [generatedChallan, setGeneratedChallan] = useState(null);
+  const [selectedStatuses, setSelectedStatuses] = useState({});
   const [showCODModal, setShowCODModal] = useState(false);
   const [codStatus, setCodStatus] = useState("");
 
@@ -100,7 +102,7 @@ const DispatchComponent = () => {
   const generateChallan = async () => {
     try {
       const subtotal = challanData.items.reduce((acc, item) => acc + item.amount, 0);
-      const gstRate = 0.18;
+      const gstRate = 0.05;
       const gstAmount = subtotal * gstRate;
       const deliveryCharge = selectedOrder.deliveryCharge || 0;
       const totalAmount = subtotal + gstAmount + deliveryCharge;
@@ -163,6 +165,17 @@ const DispatchComponent = () => {
     setSelectedOrder(order);
     setCodStatus(order.paymentStatus);
     setShowCODModal(true);
+  };
+
+  const handleStatusChange = (orderId, value) => {
+    setSelectedStatuses((prev) => ({ ...prev, [orderId]: value }));
+  };
+
+  const handleUpdateClick = (order) => {
+    const newStatus = selectedStatuses[order._id];
+    if (newStatus && newStatus !== order.orderStatus) {
+      updateOrderStatus(order._id, newStatus);
+    }
   };
 
   useEffect(() => {
@@ -249,7 +262,7 @@ const DispatchComponent = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
           </div>
         ) : processingOrders.length > 0 ? (
-          <div className="overflow-x-auto w-full">
+          <div className="overflow-x-auto w-full min-h-[60vh]">
             <table className="min-w-[1000px] border-collapse">
               <thead>
                 <tr className="bg-gradient-to-r from-blue-50 to-teal-50 text-gray-700">
@@ -299,30 +312,13 @@ const DispatchComponent = () => {
                     <td className="py-3 px-4 font-semibold text-blue-600">
                       ₹ {order.totalAmountWithDelivery || order.totalAmount}
                     </td>
-                    <td className="py-3 px-4 flex gap-2">
-                      <select
-                        onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                        className="p-1 border rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Status</option>
-                        {["confirmed", "shipped", "cancelled"].map((status) => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => handleOrderSelection(order)}
-                        className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
-                      >
-                        Challan
-                      </button>
-                      {order.paymentMethod === "COD" && (
-                        <button
-                          onClick={() => handleCODSelection(order)}
-                          className="px-3 py-1 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors duration-200"
-                        >
-                          COD
-                        </button>
-                      )}
+                    <td className="py-3 px-4 text-right">
+                      <OrderActions
+                        order={order}
+                        updateOrderStatus={updateOrderStatus}
+                        handleOrderSelection={handleOrderSelection}
+                        handleCODSelection={handleCODSelection}
+                      />
                     </td>
                   </tr>
                 ))}
