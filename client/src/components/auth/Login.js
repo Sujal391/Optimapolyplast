@@ -245,9 +245,9 @@ const Login = () => {
       reception: "/reception/dashboard",
       stock: "/stock/dashboard",
       dispatch: "/dispatch/dashboard",
-      marketing: "/marketing/dashboard",
-      user: "/user/dashboard",
-      miscellaneous: "/miscellaneous/dashboard",
+      // marketing: "/marketing/dashboard",
+      // user: "/user/dashboard",
+      // miscellaneous: "/miscellaneous/dashboard",
     };
     return dashboardRoutes[role] || "/";
   };

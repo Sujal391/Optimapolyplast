@@ -535,7 +535,7 @@ const DispatchComponent = () => {
               </table>
               <div className="text-right space-y-2 text-sm">
                 <p><strong>Subtotal:</strong> ₹ {generatedChallan.subtotal.toFixed(2)}</p>
-                <p><strong>GST (18%):</strong> ₹ {generatedChallan.gstAmount.toFixed(2)}</p>
+                <p><strong>GST (5%):</strong> ₹ {generatedChallan.gstAmount.toFixed(2)}</p>
                 <p><strong>Delivery Charge:</strong> ₹ {generatedChallan.deliveryCharge === 0 ? 'Free' : generatedChallan.deliveryCharge.toFixed(2)}</p>
                 <p className="text-lg font-semibold"><strong>Grand Total:</strong> ₹ {generatedChallan.totalAmount.toFixed(2)}</p>
               </div>

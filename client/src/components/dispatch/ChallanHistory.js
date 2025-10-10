@@ -118,7 +118,7 @@ const DispatchComponent = () => {
   // Generates HTML structure for the Challan (Updated to match the provided image)
   const getChallanHTML = (challan) => {
     const subtotal = challan.items.reduce((acc, item) => acc + item.amount, 0);
-    const gstRate = 0.18; // 18% GST
+    const gstRate = 0.05; // 5% GST
     const gstAmount = subtotal * gstRate;
     const deliveryCharge = challan.deliveryCharge || 0;
     const totalAmount = subtotal + gstAmount + deliveryCharge;
@@ -180,7 +180,7 @@ const DispatchComponent = () => {
         <!-- Totals Section -->
         <div style="text-align: right; margin-top: 20px; font-size: 12px;">
           <p><strong>Subtotal:</strong> ₹ ${subtotal.toFixed(2)}</p>
-          <p><strong>GST (18%):</strong> ₹ ${gstAmount.toFixed(2)}</p>
+          <p><strong>GST (5%):</strong> ₹ ${gstAmount.toFixed(2)}</p>
           <p><strong>Delivery Charge:</strong> ₹ ${deliveryCharge === 0 ? "Free" : deliveryCharge.toFixed(2)}</p>
           <p style="font-size: 14px; font-weight: bold;"><strong>Grand Total:</strong> ₹ ${totalAmount.toFixed(2)}</p>
         </div>
