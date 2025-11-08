@@ -8,9 +8,11 @@ import cookies from 'js-cookie';
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const dropdownRef = useRef(null);
+  const stockDropdownRef = useRef(null);
   const profileRef = useRef(null);
   const location = useLocation();
 
@@ -58,11 +60,14 @@ const Navbar = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      if (stockDropdownRef.current && !stockDropdownRef.current.contains(event.target)) {
+        setIsStockDropdownOpen(false);
+      }
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -90,9 +95,57 @@ const Navbar = () => {
             Attendance
           </Link>
 
-          <Link to="/Add-Stocks" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
-            Add Stocks
-          </Link>
+          {/* Stock Dropdown */}
+          <div className="relative" ref={stockDropdownRef}>
+            <button
+              onClick={() => setIsStockDropdownOpen(!isStockDropdownOpen)}
+              className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300 flex items-center space-x-2"
+            >
+              <span>Stock</span>
+              <svg
+                className={`w-4 h-4 transition-transform ${isStockDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+
+            {/* Dropdown Menu */}
+            {isStockDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white text-gray-800 rounded-lg shadow-lg z-50">
+                <Link
+                  to="/stock/bottles-caps"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-t-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Bottles & Caps
+                </Link>
+                <Link
+                  to="/stock/raw-material"
+                  className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Raw Material
+                </Link>
+                <Link
+                  to="/stock/inward-entries"
+                  className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Inward Entries
+                </Link>
+                <Link
+                  to="/stock/production"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Production
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* Profile Section */}
           <div className="relative flex items-center space-x-3" ref={profileRef}>
