@@ -825,6 +825,9 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
       ? new Date(editingProduct.validFrom)
       : null,
     validTo: editingProduct?.validTo ? new Date(editingProduct.validTo) : null,
+    bulkDiscountEnabled: editingProduct?.bulkDiscountEnabled || false,
+    bulkDiscountMinBoxes: editingProduct?.bulkDiscountMinBoxes || "",
+    bulkDiscountPrice: editingProduct?.bulkDiscountPrice || "",
   });
   const [image, setImage] = useState(null);
   const [error, setError] = useState("");
@@ -918,6 +921,22 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
     formDataToSend.append("originalPrice", Number(formData.originalPrice));
     formDataToSend.append("boxes", Number(formData.boxes));
     formDataToSend.append("bottlesPerBox", Number(formData.bottlesPerBox));
+
+    if (formData.bulkDiscountEnabled) {
+      if (
+        !formData.bulkDiscountMinBoxes ||
+        !formData.bulkDiscountPrice ||
+        Number(formData.bulkDiscountMinBoxes) <= 0 ||
+        Number(formData.bulkDiscountPrice) >= Number(formData.originalPrice)
+      ) {
+        setError("Please provide valid bulk discount values");
+        return;
+      }
+
+      formDataToSend.append("bulkDiscountEnabled", true);
+      formDataToSend.append("bulkDiscountMinBoxes", Number(formData.bulkDiscountMinBoxes));
+      formDataToSend.append("bulkDiscountPrice", Number(formData.bulkDiscountPrice));
+    }
 
     if (formData.discountedPrice) {
       formDataToSend.append(
@@ -1121,6 +1140,48 @@ const UploadForm = ({ onClose, editingProduct, onSuccess }) => {
                 />
               </>
             )}
+            {/* Bulk discount feature */}
+            <div className="col-span-2 mt-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.bulkDiscountEnabled}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bulkDiscountEnabled: e.target.checked })
+                  }
+                />
+                <span className="font-medium text-gray-700">
+                  Enable Bulk Discount for this product
+                </span>
+              </label>
+            </div>
+
+            {formData.bulkDiscountEnabled && (
+              <>
+                <input
+                  type="number"
+                  placeholder="Minimum Boxes for Discount *"
+                  value={formData.bulkDiscountMinBoxes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bulkDiscountMinBoxes: e.target.value })
+                  }
+                  className="border p-2 rounded-md w-full"
+                  min="1"
+                  required
+                />
+                <input
+                  type="number"
+                  placeholder="Discounted Price per Box *"
+                  value={formData.bulkDiscountPrice}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bulkDiscountPrice: e.target.value })
+                  }
+                  className="border p-2 rounded-md w-full"
+                  min="0"
+                  required
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -1161,7 +1222,7 @@ const ProductCard = ({ product, onEdit, onDelete }) => {
         <img
           src={product.image || "placeholder-image-url"}
           alt={product.name}
-          className="w-full h-full object-cover rounded-t-lg"
+          className="w-full h-full object-contain rounded-t-lg"
         />
         <div className="absolute top-2 right-2 flex gap-2">
           <button
@@ -1196,6 +1257,12 @@ const ProductCard = ({ product, onEdit, onDelete }) => {
             <div className="flex justify-between items-center text-green-500">
               <span>Discount:</span>
               <span className="font-bold">{product.discountTag}</span>
+            </div>
+          )}
+          {product.bulkDiscountEnabled && (
+            <div className="mt-2 text-sm text-green-600">
+              Bulk Discount: ₹{product.bulkDiscountPrice} per box when ordering more than{" "}
+              {product.bulkDiscountMinBoxes} boxes
             </div>
           )}
         </div>

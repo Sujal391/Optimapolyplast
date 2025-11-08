@@ -21,6 +21,7 @@ import UserList from './components/admin/UserList';
 import CreateUser from './components/admin/CreateUser';
 import TotalUser from './components/reception/TotalUser';
 import OrderList from './components/admin/OrderList';
+import RawMaterialSummary from './components/admin/RawMaterialSummary';
 
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';
@@ -43,7 +44,10 @@ import PendingPayment from './components/dispatch/PendingPayment';
 import StockDashboard from './components/stock/Dashboard';
 import StockAttendance from './components/stock/Attendance';
 import StockList from './components/admin/StockList';
-import AddStock from './components/stock/AddStock';
+import AddStock from './components/stock/Stock';
+import RawMaterial from './components/stock/RawMaterial';
+import Inward from './components/stock/Inward';
+import Production from './components/stock/Production';
 
 // Shared Components
 import ProductList from './components/admin/ProductList';
@@ -209,6 +213,38 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
+        <Route path="/stock/bottles-caps" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <AddStock />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/raw-material" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <RawMaterial />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/inward-entries" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Inward />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/production" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Production />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
 
         {/* Dispatch Panel Routes */}
         <Route path="/dispatch/dashboard" element={
@@ -281,6 +317,14 @@ function App() {
             {['admin'].some(role => ['admin', 'stock'].includes(role)) && <HeaderWithConditionalRender />}
             <AuthLayout>
               <StockList />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/raw-material-summary" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            {['admin'].some(role => ['admin'].includes(role)) && <HeaderWithConditionalRender />}
+            <AuthLayout>
+              <RawMaterialSummary />
             </AuthLayout>
           </PrivateRoute>
         }/>

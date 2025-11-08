@@ -161,15 +161,17 @@
 
 
 import React, { useState } from "react";
-import { FaBars, FaTimes, FaHome, FaUser, FaProductHunt,FaCalendarCheck, FaBullhorn, FaShoppingCart, FaUserPlus, FaBox } from "react-icons/fa";
+import { FaBars, FaTimes, FaHome, FaUser, FaProductHunt,FaCalendarCheck, FaBullhorn, FaShoppingCart, FaUserPlus, FaBox, FaChevronDown } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../assets/logo1.png";
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isStockDropdownOpen, setIsStockDropdownOpen] = useState(false);
   const { pathname } = useLocation();
 
   const toggleSidebar = () => setIsOpen(prev => !prev);
+  const toggleStockDropdown = () => setIsStockDropdownOpen(prev => !prev);
 
   // Navigation items array for better maintainability
   const navItems = [
@@ -177,11 +179,16 @@ const Sidebar = () => {
     { path: "/order", icon: FaShoppingCart, label: "Order" },
     { path: "/users", icon: FaUser, label: "Users" },
     { path: "/product", icon: FaProductHunt, label: "Product" },
-    { path: "/stock", icon: FaBox, label: "Stock" },
     { path: "/attandance", icon: FaCalendarCheck, label: "Attendance" }, // Fixed typo
     { path: "/marketing", icon: FaBullhorn, label: "Marketing" },
     { path: "/createUser", icon: FaUserPlus, label: "Create Panels" },
     { path: "/upload-banner", icon: FaUserPlus, label: "Upload Banner" },
+  ];
+
+  // Stock dropdown items
+  const stockDropdownItems = [
+    { path: "/stock", label: "Stock History" },
+    { path: "/raw-material-summary", label: "Raw Material Summary" },
   ];
 
   // Common classes
@@ -223,15 +230,52 @@ const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
           <ul className="space-y-4 p-4">
-            {navItems.map(({ path, icon: Icon, label }) => (
-              <li
-                key={path}
-                className={navItemClasses(pathname === path)}
+            {navItems.slice(0, 4).map(({ path, icon: Icon, label }) => (
+              <li key={path} className={navItemClasses(pathname === path)}>
+                <Link to={path} className="flex items-center space-x-3 text-white">
+                  <Icon />
+                  <span>{label}</span>
+                </Link>
+              </li>
+            ))}
+
+            {/* Stock Dropdown - placed after Product */}
+            <li className="hover:bg-gray-700 p-2 rounded-lg">
+              <button
+                onClick={toggleStockDropdown}
+                className="flex items-center space-x-3 text-white w-full"
               >
-                <Link
-                  to={path}
-                  className="flex items-center space-x-3 text-white"
-                >
+                <FaBox />
+                <span>Stock</span>
+                <FaChevronDown
+                  size={12}
+                  className={`ml-auto transition-transform ${
+                    isStockDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {isStockDropdownOpen && (
+                <ul className="mt-2 ml-4 space-y-2 border-l border-gray-600 pl-4">
+                  {stockDropdownItems.map(({ path, label }) => (
+                    <li key={path}>
+                      <Link
+                        to={path}
+                        className={`text-sm text-white hover:text-gray-300 block ${
+                          pathname === path ? "font-bold text-blue-400" : ""
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+
+            {/* Remaining items after Stock */}
+            {navItems.slice(4).map(({ path, icon: Icon, label }) => (
+              <li key={path} className={navItemClasses(pathname === path)}>
+                <Link to={path} className="flex items-center space-x-3 text-white">
                   <Icon />
                   <span>{label}</span>
                 </Link>
