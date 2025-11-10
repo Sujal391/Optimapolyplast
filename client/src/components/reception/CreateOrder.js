@@ -982,6 +982,14 @@ const ProductSelection = ({
             }}
           />
           <p className="text-lg font-semibold text-gray-700">{product.name}</p>
+          <p className="text-gray-700">Type: {product.type}</p>
+          <p className="text-gray-700">Category: {product.category}</p>
+          <p className="font-semibold text-gray-700">Description:</p>
+          <p className="text-gray-700">{product.description
+              ? product.description.split(" ").slice(0, 12).join(" ") +
+                (product.description.split(" ").length > 12 ? "..." : "")
+              : "N/A"}
+          </p>
           <p className="text-gray-600">Price: ₹{product.price}</p>
           <p className="text-gray-600">Boxes: {product.boxes}</p>
           <input
@@ -1527,6 +1535,7 @@ const CreateOrder = () => {
                       <p className="font-semibold text-gray-800">
                         {product.name}
                       </p>
+                      <p className="text-gray-600">Type: {product.type}</p>
                       <p className="text-gray-600">Price: ₹{product.price}</p>
                       <p className="text-gray-600">Boxes: {product.boxes}</p>
                       {product.category && (

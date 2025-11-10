@@ -324,17 +324,16 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import cookies from 'js-cookie';
+import cookies from "js-cookie";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
 });
 
-// Axios Interceptor for Authentication
+// ✅ Axios Interceptor for Authentication
 api.interceptors.request.use(
   (config) => {
-    // const token = localStorage.getItem("token");
-      const token = cookies.get("token");
+    const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
         ? token
@@ -359,12 +358,13 @@ export default function StockManagement() {
   const [history, setHistory] = useState([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyTitle, setHistoryTitle] = useState("Stock History");
+  const [expanded, setExpanded] = useState(null); // ✅ For read-more toggle
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  // Fetch all stock products
+  // ✅ Fetch all stock products
   const fetchProducts = async () => {
     try {
       const response = await api.get("/stock/products");
@@ -380,20 +380,21 @@ export default function StockManagement() {
     }
   };
 
-  // Fetch stock history for a specific product
+  // ✅ Fetch stock history for a specific product
   const getStockHistory = async (productId, productName) => {
     try {
       const response = await api.get(`/stock/history/${productId}`);
       if (response.data && response.data.success) {
-        // Map the history entries to include product information
-        const processedHistory = response.data.data.updateHistory.map(update => ({
-          ...update,
-          productId: {
-            _id: response.data.data.productId._id,
-            name: response.data.data.productId.name
-          }
-        }));
-        
+        const processedHistory = response.data.data.updateHistory.map(
+          (update) => ({
+            ...update,
+            productId: {
+              _id: response.data.data.productId._id,
+              name: response.data.data.productId.name,
+            },
+          })
+        );
+
         setHistory(processedHistory);
         setHistoryTitle(`History of ${productName}`);
         setIsHistoryOpen(true);
@@ -405,16 +406,15 @@ export default function StockManagement() {
     }
   };
 
-  // Fetch all stock history
+  // ✅ Fetch all stock history
   const getAllStockHistory = async () => {
     try {
       const response = await api.get("/stock/history");
       if (response.data && response.data.success) {
-        // Ensure we're handling the nested data correctly
-        const allHistory = response.data.data.flatMap((stock) => 
-          stock.updateHistory.map(update => ({
+        const allHistory = response.data.data.flatMap((stock) =>
+          stock.updateHistory.map((update) => ({
             ...update,
-            productId: stock.productId // Preserve the product information
+            productId: stock.productId,
           }))
         );
         setHistory(allHistory);
@@ -428,12 +428,12 @@ export default function StockManagement() {
     }
   };
 
-  // Handle form input changes
+  // ✅ Handle form input changes
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Update stock boxes
+  // ✅ Update stock boxes
   const updateStock = async (e) => {
     e.preventDefault();
     if (!selectedProduct || !formData.boxes) {
@@ -441,7 +441,6 @@ export default function StockManagement() {
       return;
     }
     try {
-      // const userId = localStorage.getItem("userId");
       const userId = cookies.get("userId");
       const response = await api.put("/stock/update-quantity", {
         productId: selectedProduct,
@@ -459,8 +458,16 @@ export default function StockManagement() {
         setError("Failed to update stock: " + response.data.message);
       }
     } catch (error) {
-      setError("Error updating stock: " + (error.response?.data?.message || error.message));
+      setError(
+        "Error updating stock: " +
+          (error.response?.data?.message || error.message)
+      );
     }
+  };
+
+  // ✅ Toggle read more
+  const toggleDescription = (id) => {
+    setExpanded(expanded === id ? null : id);
   };
 
   return (
@@ -484,40 +491,86 @@ export default function StockManagement() {
         </div>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>
+          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+            {error}
+          </div>
         )}
 
         {loading ? (
           <p className="mt-4">Loading products...</p>
         ) : (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <div key={product._id} className="p-4 bg-white shadow-lg rounded-lg">
-                {product.image && (
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-40 object-cover rounded-md"
-                  />
-                )}
-                <h3 className="font-semibold text-lg mt-3">{product.name}</h3>
-                <p className="text-gray-700 text-sm">{product.description}</p>
-                <p className="font-medium text-gray-900 mt-2">Boxes: {product.boxes}</p>
-                <button
-                  className="mt-3 text-blue-600 hover:underline"
-                  onClick={() => getStockHistory(product._id, product.name)}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {products.map((product) => {
+              const isExpanded = expanded === product._id;
+              const shortDescription =
+                product.description?.length > 100
+                  ? product.description.slice(0, 100) + "..."
+                  : product.description;
+
+              return (
+                <div
+                  key={product._id}
+                  className="p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300"
                 >
-                  View History
-                </button>
-              </div>
-            ))}
+                  {product.image && (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-44 object-cover rounded-lg"
+                      loading="lazy"
+                    />
+                  )}
+
+                  <div className="mt-4 space-y-1">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-gray-500">{product.type}</p>
+                    <p className="text-sm text-gray-500">{product.category}</p>
+                  </div>
+
+                  <div className="mt-3 text-gray-700 text-sm leading-relaxed">
+                    {isExpanded ? product.description : shortDescription}
+                    {product.description?.length > 100 && (
+                      <button
+                        onClick={() => toggleDescription(product._id)}
+                        className="text-blue-600 font-medium ml-1 hover:underline focus:outline-none"
+                      >
+                        {isExpanded ? "Read Less" : "Read More"}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 text-sm text-gray-800 space-y-1">
+                    <p>
+                      <span className="font-medium">Boxes:</span>{" "}
+                      {product.boxes}
+                    </p>
+                    <p>
+                      <span className="font-medium">Bottles per box:</span>{" "}
+                      {product.bottlesPerBox}
+                    </p>
+                  </div>
+
+                  <button
+                    className="mt-4 w-full text-center text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                    onClick={() => getStockHistory(product._id, product.name)}
+                  >
+                    View History →
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {/* ✅ Stock Update Form Modal */}
         {isFormOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-96">
-              <h3 className="text-2xl font-bold mb-6 text-gray-800">Update Stock</h3>
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">
+                Update Stock
+              </h3>
               <form className="space-y-6" onSubmit={updateStock}>
                 <div>
                   <label className="block text-gray-700 font-semibold mb-2">
@@ -538,7 +591,9 @@ export default function StockManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Boxes</label>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Boxes
+                  </label>
                   <input
                     type="number"
                     name="boxes"
@@ -551,7 +606,9 @@ export default function StockManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Change Type</label>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Change Type
+                  </label>
                   <select
                     name="changeType"
                     className="border border-gray-300 w-full px-4 py-2 rounded-lg"
@@ -565,7 +622,9 @@ export default function StockManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2">Notes</label>
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Notes
+                  </label>
                   <textarea
                     name="notes"
                     className="border border-gray-300 w-full px-4 py-2 rounded-lg"
@@ -595,12 +654,15 @@ export default function StockManagement() {
           </div>
         )}
 
+        {/* ✅ Stock History Modal */}
         {isHistoryOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-4xl">
-              <h3 className="text-2xl font-bold mb-6 text-gray-800">{historyTitle}</h3>
+              <h3 className="text-2xl font-bold mb-6 text-gray-800">
+                {historyTitle}
+              </h3>
               <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-left">
+                <table className="w-full text-left border border-gray-200">
                   <thead>
                     <tr className="bg-gray-200">
                       <th className="p-2">Product</th>
@@ -613,16 +675,21 @@ export default function StockManagement() {
                   </thead>
                   <tbody>
                     {history.map((entry, index) => (
-                      <tr key={index} className="border-b">
+                      <tr key={index} className="border-b hover:bg-gray-50">
                         <td className="p-2">
-                          {entry.productId?.name || 
-                            (entry.productId && typeof entry.productId === 'string' ? 'N/A' : 'N/A')}
+                          {entry.productId?.name ||
+                            (entry.productId &&
+                            typeof entry.productId === "string"
+                              ? "N/A"
+                              : "N/A")}
                         </td>
                         <td className="p-2">{entry.updatedBy?.name || "N/A"}</td>
                         <td className="p-2">{entry.boxes}</td>
-                        <td className="p-2">{entry.changeType}</td>
+                        <td className="p-2 capitalize">{entry.changeType}</td>
                         <td className="p-2">{entry.notes || "N/A"}</td>
-                        <td className="p-2">{new Date(entry.updatedAt).toLocaleString("en-IN")}</td>
+                        <td className="p-2">
+                          {new Date(entry.updatedAt).toLocaleString("en-IN")}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
