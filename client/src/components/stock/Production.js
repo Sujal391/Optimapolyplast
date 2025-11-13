@@ -24,7 +24,7 @@ export default function Production() {
 
   // Outcome item form state
   const [outcomeForm, setOutcomeForm] = useState({
-    outcomeItemId: '',
+    outcomeItemName: '',
     quantityCreatedKg: '',
   });
 
@@ -68,8 +68,8 @@ export default function Production() {
   };
 
   const handleAddOutcome = () => {
-    if (!outcomeForm.outcomeItemId || !outcomeForm.quantityCreatedKg) {
-      setError('Outcome Item ID and Quantity are required');
+    if (!outcomeForm.outcomeItemName || !outcomeForm.quantityCreatedKg) {
+      setError('Outcome Item Name and Quantity are required');
       return;
     }
 
@@ -78,13 +78,13 @@ export default function Production() {
       outcomes: [
         ...prev.outcomes,
         {
-          outcomeItemId: outcomeForm.outcomeItemId,
+          outcomeItemName: outcomeForm.outcomeItemName,
           quantityCreatedKg: parseFloat(outcomeForm.quantityCreatedKg),
         }
       ]
     }));
 
-    setOutcomeForm({ outcomeItemId: '', quantityCreatedKg: '' });
+    setOutcomeForm({ outcomeItemName: '', quantityCreatedKg: '' });
     setError('');
   };
 
@@ -229,14 +229,14 @@ export default function Production() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Outcome Item ID *
+                  Outcome Item Name *
                 </label>
                 <input
                   type="text"
-                  name="outcomeItemId"
-                  value={outcomeForm.outcomeItemId}
+                  name="outcomeItemName"
+                  value={outcomeForm.outcomeItemName}
                   onChange={handleOutcomeInputChange}
-                  placeholder="e.g., BOTTLE-001"
+                  placeholder="e.g., Bottle"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -275,7 +275,7 @@ export default function Production() {
                   {formData.outcomes.map((outcome, index) => (
                     <div key={index} className="flex justify-between items-center bg-white p-2 rounded border border-gray-200">
                       <span className="text-sm text-gray-700">
-                        {outcome.outcomeItemId} - {outcome.quantityCreatedKg} Kg
+                        {outcome.outcomeItemName} - {outcome.quantityCreatedKg} Kg
                       </span>
                       <button
                         onClick={() => handleRemoveOutcome(index)}
@@ -338,7 +338,7 @@ export default function Production() {
                       <td className="px-6 py-4 text-gray-700">
                         <div className="text-sm">
                           {outcome.outcomes?.map((o, i) => (
-                            <div key={i}>{o.outcomeItemId}: {o.quantityCreatedKg} Kg</div>
+                            <div key={i}>{o.outcomeItemName || 'N/A'}: {o.quantityCreatedKg} Kg</div>
                           )) || '-'}
                         </div>
                       </td>
