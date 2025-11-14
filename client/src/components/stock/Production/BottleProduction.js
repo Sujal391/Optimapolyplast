@@ -1,0 +1,207 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '../../ui/button';
+import { addOutcomeItem, fetchOutcomeItems } from '../../../services/api/stock';
+
+export default function Outcome() {
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [items, setItems] = useState([]);
+
+  const [formData, setFormData] = useState({
+    itemName: '',
+    itemCode: '',
+    type: '',
+    subcategory: '',
+    remarks: '',
+  });
+
+  // Load items
+  const loadOutcomeItems = async () => {
+    try {
+      const res = await fetchOutcomeItems();
+      setItems(res?.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    loadOutcomeItems();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    setError('');
+    setSuccess('');
+
+    if (!formData.itemName || !formData.itemCode || !formData.type) {
+      setError('Item Name, Item Code, and Type are required.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const payload = {
+        itemName: formData.itemName,
+        itemCode: formData.itemCode,
+        type: formData.type,
+        subcategory: formData.subcategory,
+        remarks: formData.remarks,
+      };
+
+      await addOutcomeItem(payload);
+
+      setSuccess('Outcome item added successfully!');
+      setFormData({
+        itemName: '',
+        itemCode: '',
+        type: '',
+        subcategory: '',
+        remarks: '',
+      });
+
+      loadOutcomeItems();
+
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.message || 'Failed to add outcome item');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="px-4 md:px-10 mt-6">
+      {/* Success Message */}
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+          {success}
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* FORM CARD */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-10">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Add Outcome Item</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+            <input
+              type="text"
+              name="itemName"
+              value={formData.itemName}
+              onChange={handleInputChange}
+              placeholder="Preform 500ml"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Item Code *</label>
+            <input
+              type="text"
+              name="itemCode"
+              value={formData.itemCode}
+              onChange={handleInputChange}
+              placeholder="PREFORM_500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select Type</option>
+              <option value="preform">Preform</option>
+              <option value="cap">Cap</option>
+              <option value="bottle">Bottle</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+            <input
+              type="text"
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleInputChange}
+              placeholder="500ml, 1L, 2L, etc."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+            <textarea
+              name="remarks"
+              value={formData.remarks}
+              onChange={handleInputChange}
+              rows="3"
+              placeholder="Optional remarks"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            {loading ? 'Adding...' : 'Add Outcome Item'}
+          </Button>
+        </div>
+      </div>
+
+      {/* LIST CARD (OPTION 3) */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Outcome Items</h3>
+
+        {items.length === 0 ? (
+          <p className="text-gray-600">No items found.</p>
+        ) : (
+          <div>
+            {items.map((item, index) => (
+              <div
+                key={item._id}
+                className={`py-4 ${index !== items.length - 1 ? 'border-b border-gray-200' : ''}`}
+              >
+                <p className="text-lg font-semibold text-gray-800">{item.itemName}</p>
+                <p className="text-sm text-gray-600">Code: {item.itemCode}</p>
+                <p className="text-sm text-gray-600 capitalize">Type: {item.type}</p>
+                {item.subcategory && (
+                  <p className="text-sm text-gray-600">Subcategory: {item.subcategory}</p>
+                )}
+                {item.remarks && (
+                  <p className="text-sm text-gray-600">Remarks: {item.remarks}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

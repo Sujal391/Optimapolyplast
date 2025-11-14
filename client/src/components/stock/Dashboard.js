@@ -143,6 +143,27 @@ const Navbar = () => {
                 >
                   Production
                 </Link>
+                <Link
+                  to="/stock/outcome"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Outcome
+                </Link>
+                <Link
+                  to="/stock/wastage"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Wastage
+                </Link>
+                <Link
+                  to="/stock/direct-usage"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Direct Usage
+                </Link>
               </div>
             )}
           </div>

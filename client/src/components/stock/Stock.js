@@ -584,7 +584,7 @@ export default function StockManagement() {
                     <option value="">Select a product</option>
                     {products.map((product) => (
                       <option key={product._id} value={product._id}>
-                        {product.name}
+                        {product.name} ({product.category})
                       </option>
                     ))}
                   </select>

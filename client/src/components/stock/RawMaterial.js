@@ -1,16 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Box,
+  Button,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import Paginator from '../common/Paginator';
-import { fetchRawMaterials, addRawMaterial } from '../../services/api/stock';
-import cookies from 'js-cookie';
+  DialogContent,
+  DialogActions,
+  TextField,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Alert,
+  CircularProgress,
+  IconButton,
+  TablePagination,
+  Tooltip,
+  Container,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Chip,
+  InputAdornment,
+  Grid,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+  Inventory as InventoryIcon,
+} from '@mui/icons-material';
+import {
+  fetchRawMaterials,
+  addRawMaterial,
+  getRawMaterialById,
+  updateRawMaterial,
+  deleteRawMaterial,
+} from '../../services/api/stock';
 
 export default function RawMaterial() {
   const [materials, setMaterials] = useState([]);
@@ -18,27 +50,58 @@ export default function RawMaterial() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentMaterialId, setCurrentMaterialId] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
     itemName: '',
     itemCode: '',
+    subcategory: '',
+    unit: 'Kg',
+    supplier: '',
+    minStockLevel: 0,
     remarks: '',
   });
 
-  // Fetch raw materials on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Fetch raw materials on mount and when filters change
   useEffect(() => {
     fetchMaterials();
-  }, []);
+  }, [debouncedSearch, categoryFilter, showInactive]);
 
   const fetchMaterials = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetchRawMaterials();
-      setMaterials(response.materials || response.data || []);
+      const params = {};
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (categoryFilter) params.category = categoryFilter;
+      if (showInactive) params.showInactive = true;
+
+      const response = await fetchRawMaterials(params);
+      const materialsData = response.data || [];
+      
+      // Sort by itemCode in ascending order
+      const sortedMaterials = materialsData.sort((a, b) => 
+        a.itemCode.localeCompare(b.itemCode, undefined, { numeric: true, sensitivity: 'base' })
+      );
+      setMaterials(sortedMaterials);
     } catch (err) {
       setError(err.message || 'Failed to fetch raw materials');
       console.error('Error fetching materials:', err);
@@ -55,7 +118,52 @@ export default function RawMaterial() {
     }));
   };
 
-  const handleAddMaterial = async () => {
+  const handleOpenModal = (material = null) => {
+    if (material) {
+      setIsEditMode(true);
+      setCurrentMaterialId(material._id);
+      setFormData({
+        itemName: material.itemName,
+        itemCode: material.itemCode,
+        subcategory: material.subcategory || '',
+        unit: material.unit || 'Kg',
+        supplier: material.supplier || '',
+        minStockLevel: material.minStockLevel || 0,
+        remarks: material.remarks || '',
+      });
+    } else {
+      setIsEditMode(false);
+      setCurrentMaterialId(null);
+      setFormData({
+        itemName: '',
+        itemCode: '',
+        subcategory: '',
+        unit: 'Kg',
+        supplier: '',
+        minStockLevel: 0,
+        remarks: '',
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setCurrentMaterialId(null);
+    setFormData({
+      itemName: '',
+      itemCode: '',
+      subcategory: '',
+      unit: 'Kg',
+      supplier: '',
+      minStockLevel: 0,
+      remarks: '',
+    });
+    setError('');
+  };
+
+  const handleSubmit = async () => {
     if (!formData.itemName || !formData.itemCode) {
       setError('Item Name and Item Code are required');
       return;
@@ -63,184 +171,395 @@ export default function RawMaterial() {
 
     try {
       setLoading(true);
-      await addRawMaterial(formData);
-      setSuccess('Raw material added successfully!');
-      setFormData({ itemName: '', itemCode: '', remarks: '' });
-      setIsModalOpen(false);
+      setError('');
+      
+      if (isEditMode) {
+        const response = await updateRawMaterial(currentMaterialId, formData);
+        setSuccess('Raw material updated successfully!');
+      } else {
+        const response = await addRawMaterial(formData);
+        setSuccess('Raw material added successfully!');
+      }
+      
+      handleCloseModal();
       await fetchMaterials();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to add raw material');
+      setError(err.response?.data?.message || err.message || `Failed to ${isEditMode ? 'update' : 'add'} raw material`);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this raw material? This will deactivate the item.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteRawMaterial(id);
+      setSuccess('Raw material deleted successfully!');
+      await fetchMaterials();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.message || 'Failed to delete raw material');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const getStockStatusColor = (status) => {
+    switch (status) {
+      case 'OUT_OF_STOCK':
+        return 'error';
+      case 'LOW_STOCK':
+        return 'warning';
+      case 'NORMAL':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStockStatusLabel = (status) => {
+    switch (status) {
+      case 'OUT_OF_STOCK':
+        return 'Out of Stock';
+      case 'LOW_STOCK':
+        return 'Low Stock';
+      case 'NORMAL':
+        return 'Normal';
+      default:
+        return status;
+    }
+  };
+
+  // Get unique categories for filter
+  const uniqueCategories = [...new Set(materials.map(m => m.subcategory).filter(Boolean))];
+
   // Pagination
-  const startIdx = (page - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
-  const paginatedMaterials = materials.slice(startIdx, endIdx);
+  const paginatedMaterials = materials.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-blue-100 min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">Raw Material Management</h2>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            + Add Raw Material
-          </Button>
-        </div>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <InventoryIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+          <Typography variant="h4" component="h1" fontWeight="bold" color="primary">
+            Raw Material Management
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenModal()}
+          size="large"
+        >
+          Add Raw Material
+        </Button>
+      </Box>
 
-        {/* Success Message */}
-        {success && (
-          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
-            {success}
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
-          </div>
-        )}
-
-        {/* Table */}
-        {!loading && materials.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                  <tr>
-                    <th className="px-6 py-3 text-left font-semibold">Item Name</th>
-                    <th className="px-6 py-3 text-left font-semibold">Item Code</th>
-                    <th className="px-6 py-3 text-left font-semibold">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedMaterials.map((material, index) => (
-                    <tr
-                      key={material._id}
-                      className={`border-b hover:bg-gray-50 transition ${
-                        index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                      }`}
-                    >
-                      <td className="px-6 py-4 font-medium text-gray-800">{material.itemName}</td>
-                      <td className="px-6 py-4 text-gray-700">{material.itemCode}</td>
-                      <td className="px-6 py-4 text-gray-700">{material.remarks || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="mt-4 flex items-center justify-between px-6 pb-6">
-              <div className="text-sm text-gray-600">
-                Showing {Math.min(materials.length, startIdx + 1)}–{Math.min(materials.length, endIdx)} of {materials.length}
-              </div>
-              <Paginator page={page} total={materials.length} pageSize={pageSize} onPageChange={setPage} />
-              <select
-                className="border rounded px-2 py-1 text-sm"
-                value={pageSize}
-                onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+      {/* Filters */}
+      <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              placeholder="Search by name or code..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              inputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={categoryFilter}
+                label="Category"
+                sx={{ minWidth: 130 }}
+                onChange={(e) => setCategoryFilter(e.target.value)}
               >
-                {[5, 10, 20, 50].map((n) => (
-                  <option key={n} value={n}>{n} / page</option>
+                <MenuItem value="">All Categories</MenuItem>
+                {uniqueCategories.map((cat) => (
+                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                 ))}
-              </select>
-            </div>
-          </div>
-        )}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={showInactive}
+                label="Status"
+                onChange={(e) => setShowInactive(e.target.value)}
+              >
+                <MenuItem value={false}>Active Only</MenuItem>
+                <MenuItem value={true}>Include Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Typography variant="body2" color="text.secondary">
+              Total: {materials.length} items
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
 
-        {!loading && materials.length === 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <p className="text-gray-500 text-lg">No raw materials found. Add one to get started!</p>
-          </div>
-        )}
-      </div>
+      {/* Success Message */}
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
-      {/* Add Material Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Raw Material</DialogTitle>
-            <DialogDescription>
-              Fill in the details to add a new raw material.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Error Message */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Item Name *
-              </label>
-              <input
-                type="text"
-                name="itemName"
-                value={formData.itemName}
-                onChange={handleInputChange}
-                placeholder="e.g., Plastic Resin"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+      {/* Loading State */}
+      {loading && materials.length === 0 && (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress size={60} />
+        </Box>
+      )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Item Code *
-              </label>
-              <input
-                type="text"
-                name="itemCode"
-                value={formData.itemCode}
-                onChange={handleInputChange}
-                placeholder="e.g., RM001"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+      {/* Table */}
+      {!loading && materials.length > 0 && (
+        <Paper elevation={3}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Item Code</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Item Name</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Category</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Supplier</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Current Stock</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Min Level</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Remarks</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedMaterials.map((material, index) => (
+                  <TableRow
+                    key={material._id}
+                    sx={{
+                      '&:hover': { backgroundColor: 'action.hover' },
+                      backgroundColor: index % 2 === 0 ? 'background.default' : 'action.hover',
+                      opacity: material.isActive === false ? 0.6 : 1,
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: 'medium' }}>
+                      {material.itemCode}
+                      {material.isActive === false && (
+                        <Chip label="Inactive" size="small" color="default" sx={{ ml: 1 }} />
+                      )}
+                    </TableCell>
+                    <TableCell>{material.itemName}</TableCell>
+                    <TableCell>{material.subcategory || '-'}</TableCell>
+                    <TableCell>{material.supplier || '-'}</TableCell>
+                    <TableCell align="center">
+                      <strong>{material.currentStock || 0}</strong> {material.unit || 'Kg'}
+                    </TableCell>
+                    <TableCell align="center">
+                      {material.minStockLevel || 0} {material.unit || 'Kg'}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={getStockStatusLabel(material.stockStatus)}
+                        color={getStockStatusColor(material.stockStatus)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{material.remarks || '-'}</TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Edit">
+                        <IconButton
+                          color="primary"
+                          onClick={() => handleOpenModal(material)}
+                          size="small"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDelete(material._id)}
+                          size="small"
+                          disabled={material.isActive === false}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 20, 50]}
+            component="div"
+            count={materials.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Paper>
+      )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Remarks
-              </label>
-              <textarea
-                name="remarks"
-                value={formData.remarks}
-                onChange={handleInputChange}
-                placeholder="Optional remarks"
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+      {!loading && materials.length === 0 && (
+        <Paper elevation={2} sx={{ p: 6, textAlign: 'center' }}>
+          <InventoryIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
+          <Typography variant="h6" color="text.secondary">
+            No raw materials found. Add one to get started!
+          </Typography>
+        </Paper>
+      )}
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddMaterial}
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {loading ? 'Adding...' : 'Add Material'}
-            </Button>
-          </DialogFooter>
+      {/* Add/Edit Material Modal */}
+      <Dialog open={isModalOpen} onClose={handleCloseModal} maxWidth="small">
+        <DialogTitle sx={{ fontWeight: 600, pb: 1.5 }}>
+          {isEditMode ? 'Edit Raw Material' : 'Add Raw Material'}
+        </DialogTitle>
+
+        <DialogContent sx={{ mt: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            
+            {/* Row 1 */}
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Item Name *"
+                  name="itemName"
+                  value={formData.itemName}
+                  onChange={handleInputChange}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Item Code *"
+                  name="itemCode"
+                  value={formData.itemCode}
+                  onChange={handleInputChange}
+                  fullWidth
+                  disabled={isEditMode}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Row 2 */}
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Subcategory"
+                  name="subcategory"
+                  value={formData.subcategory}
+                  onChange={handleInputChange}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Unit</InputLabel>
+                  <Select
+                    name="unit"
+                    value={formData.unit}
+                    label="Unit"
+                    onChange={handleInputChange}
+                    sx={{ minWidth: 225 }}
+                  >
+                    <MenuItem value="Kg">Kg</MenuItem>
+                    <MenuItem value="Gm">Gm</MenuItem>
+                    <MenuItem value="Nos">Nos</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+
+            {/* Row 3 */}
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Supplier"
+                  name="supplier"
+                  value={formData.supplier}
+                  onChange={handleInputChange}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Minimum Stock Level"
+                  name="minStockLevel"
+                  type="number"
+                  value={formData.minStockLevel}
+                  onChange={handleInputChange}
+                  fullWidth
+                  inputProps={{ min: 0 }}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Row 4 */}
+            <TextField
+              label="Remarks"
+              name="remarks"
+              value={formData.remarks}
+              onChange={handleInputChange}
+              multiline
+              rows={2}
+              fullWidth
+            />
+          </Box>
         </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+          <Button onClick={handleCloseModal} variant="outlined">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : isEditMode ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
       </Dialog>
-    </div>
+    </Container>
   );
 }
