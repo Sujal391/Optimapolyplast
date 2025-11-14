@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Paginator from '../common/Paginator';
-import { getCurrentStockReport } from '../../services/api/stock';
+import Paginator from '../../common/Paginator';
+import { getCurrentStockReport } from '../../../services/api/stock';
 
 export default function CurrentStock() {
   const [stockData, setStockData] = useState([]);

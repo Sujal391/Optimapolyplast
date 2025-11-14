@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import Paginator from '../common/Paginator';
-import { getCurrentStockReport, fetchInwardEntries, recordInwardEntry } from '../../services/api/stock';
+import { Button } from '../../ui/button';
+import Paginator from '../../common/Paginator';
+import { getCurrentStockReport, fetchInwardEntries, recordInwardEntry } from '../../../services/api/stock';
 
 export default function InwardEntries() {
   const [materials, setMaterials] = useState([]);

@@ -46,8 +46,11 @@ import StockAttendance from './components/stock/Attendance';
 import StockList from './components/admin/StockList';
 import AddStock from './components/stock/Stock';
 import RawMaterial from './components/stock/RawMaterial';
-import Inward from './components/stock/Inward';
-import Production from './components/stock/Production';
+import Inward from './components/stock/Inward/Inward';
+import Production from './components/stock/Production/Production';
+import Outcome from './components/stock/Outcome';
+import Wastage from './components/stock/Wastage';
+import DirectUsage from './components/stock/DirectUsage';
 
 // Shared Components
 import ProductList from './components/admin/ProductList';
@@ -242,6 +245,30 @@ function App() {
             <AuthLayout>
               <StockDashboard />
               <Production />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/outcome" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Outcome />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/wastage" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Wastage />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/direct-usage" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <DirectUsage />
             </AuthLayout>
           </PrivateRoute>
         }/>
