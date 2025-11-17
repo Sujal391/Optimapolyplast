@@ -1,86 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
-import { addOutcomeItem, fetchOutcomeItems } from '../../../services/api/stock';
+import { recordBottleProduction } from '../../../services/api/stock';
 
-export default function Outcome() {
+export default function BottleProduction() {
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  const [items, setItems] = useState([]);
+  const [success, setSuccess] = useState('');
 
+  // Form state
   const [formData, setFormData] = useState({
-    itemName: '',
-    itemCode: '',
-    type: '',
-    subcategory: '',
+    preformType: '',
+    boxesProduced: '',
+    bottlesPerBox: '',
+    bottleCategory: '',
     remarks: '',
+    productionDate: new Date().toISOString().split('T')[0],
   });
 
-  // Load items
-  const loadOutcomeItems = async () => {
-    try {
-      const res = await fetchOutcomeItems();
-      setItems(res?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Calculated values
+  const [calculatedValues, setCalculatedValues] = useState({
+    totalBottles: 0,
+    shrinkRollUsed: 0,
+    labelsUsed: 0,
+    capsUsed: 0,
+    preformsUsed: 0,
+  });
 
+  // Update calculated values when form changes
   useEffect(() => {
-    loadOutcomeItems();
-  }, []);
+    const boxes = parseInt(formData.boxesProduced, 10) || 0;
+    const bottlesPerBox = parseInt(formData.bottlesPerBox, 10) || 0;
+    const totalBottles = boxes * bottlesPerBox;
+
+    // Assuming shrinkRollPerBox = 50 (this should match your backend logic)
+    const shrinkRollPerBox = 50;
+    const shrinkRollUsed = boxes * shrinkRollPerBox;
+
+    setCalculatedValues({
+      totalBottles,
+      shrinkRollUsed,
+      labelsUsed: totalBottles,
+      capsUsed: totalBottles,
+      preformsUsed: totalBottles,
+    });
+  }, [formData.boxesProduced, formData.bottlesPerBox]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   };
 
   const handleSubmit = async () => {
-    setError('');
-    setSuccess('');
+    if (!formData.preformType || !formData.boxesProduced || !formData.bottlesPerBox || !formData.bottleCategory) {
+      setError('Preform Type, Boxes Produced, Bottles Per Box, and Bottle Category are required');
+      return;
+    }
 
-    if (!formData.itemName || !formData.itemCode || !formData.type) {
-      setError('Item Name, Item Code, and Type are required.');
+    if (parseInt(formData.boxesProduced, 10) <= 0 || parseInt(formData.bottlesPerBox, 10) <= 0) {
+      setError('Boxes Produced and Bottles Per Box must be greater than 0');
       return;
     }
 
     try {
       setLoading(true);
+      setError('');
 
       const payload = {
-        itemName: formData.itemName,
-        itemCode: formData.itemCode,
-        type: formData.type,
-        subcategory: formData.subcategory,
+        preformType: formData.preformType,
+        boxesProduced: parseInt(formData.boxesProduced, 10),
+        bottlesPerBox: parseInt(formData.bottlesPerBox, 10),
+        bottleCategory: formData.bottleCategory,
         remarks: formData.remarks,
+        productionDate: new Date(formData.productionDate).toISOString(),
       };
 
-      await addOutcomeItem(payload);
-
-      setSuccess('Outcome item added successfully!');
+      const response = await recordBottleProduction(payload);
+      setSuccess('Bottle production recorded successfully!');
+      
+      // Reset form
       setFormData({
-        itemName: '',
-        itemCode: '',
-        type: '',
-        subcategory: '',
+        preformType: '',
+        boxesProduced: '',
+        bottlesPerBox: '',
+        bottleCategory: '',
         remarks: '',
+        productionDate: new Date().toISOString().split('T')[0],
       });
-
-      loadOutcomeItems();
-
+      
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to add outcome item');
+      setError(err.message || 'Failed to record bottle production');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="px-4 md:px-10 mt-6">
+    <div>
       {/* Success Message */}
       {success && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
@@ -95,112 +114,141 @@ export default function Outcome() {
         </div>
       )}
 
-      {/* FORM CARD */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-10">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Add Outcome Item</h3>
+      {/* Form Section */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Record Bottle Production</h3>
+        
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>Note:</strong> This will automatically deduct preforms, shrink rolls, labels, and caps from inventory.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Preform Type *
+            </label>
             <input
               type="text"
-              name="itemName"
-              value={formData.itemName}
+              name="preformType"
+              value={formData.preformType}
               onChange={handleInputChange}
-              placeholder="Preform 500ml"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 500ml, 1L, 2L"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Item Code *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bottle Category *
+            </label>
             <input
               type="text"
-              name="itemCode"
-              value={formData.itemCode}
+              name="bottleCategory"
+              value={formData.bottleCategory}
               onChange={handleInputChange}
-              placeholder="PREFORM_500"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 500ml PET Bottle"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
-            <select
-              name="type"
-              value={formData.type}
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Boxes Produced *
+            </label>
+            <input
+              type="number"
+              name="boxesProduced"
+              value={formData.boxesProduced}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select Type</option>
-              <option value="preform">Preform</option>
-              <option value="cap">Cap</option>
-              <option value="bottle">Bottle</option>
-            </select>
+              placeholder="0"
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bottles Per Box *
+            </label>
             <input
-              type="text"
-              name="subcategory"
-              value={formData.subcategory}
+              type="number"
+              name="bottlesPerBox"
+              value={formData.bottlesPerBox}
               onChange={handleInputChange}
-              placeholder="500ml, 1L, 2L, etc."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="0"
+              min="1"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Production Date
+            </label>
+            <input
+              type="date"
+              name="productionDate"
+              value={formData.productionDate}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Remarks
+            </label>
             <textarea
               name="remarks"
               value={formData.remarks}
               onChange={handleInputChange}
-              rows="3"
               placeholder="Optional remarks"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              rows="3"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
+
+        {/* Calculated Materials Preview */}
+        {calculatedValues.totalBottles > 0 && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3">Materials to be Deducted:</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="bg-white p-3 rounded border border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">Total Bottles</p>
+                <p className="text-xl font-bold text-gray-800">{calculatedValues.totalBottles}</p>
+              </div>
+              <div className="bg-white p-3 rounded border border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">Preforms Used</p>
+                <p className="text-xl font-bold text-gray-800">{calculatedValues.preformsUsed}</p>
+              </div>
+              <div className="bg-white p-3 rounded border border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">Shrink Roll Used</p>
+                <p className="text-xl font-bold text-gray-800">{calculatedValues.shrinkRollUsed}</p>
+              </div>
+              <div className="bg-white p-3 rounded border border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">Labels Used</p>
+                <p className="text-xl font-bold text-gray-800">{calculatedValues.labelsUsed}</p>
+              </div>
+              <div className="bg-white p-3 rounded border border-gray-300">
+                <p className="text-xs text-gray-600 mb-1">Caps Used</p>
+                <p className="text-xl font-bold text-gray-800">{calculatedValues.capsUsed}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-6 flex justify-end">
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-blue-600 text-white hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {loading ? 'Adding...' : 'Add Outcome Item'}
+            {loading ? 'Recording...' : 'Record Bottle Production'}
           </Button>
         </div>
-      </div>
-
-      {/* LIST CARD (OPTION 3) */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Outcome Items</h3>
-
-        {items.length === 0 ? (
-          <p className="text-gray-600">No items found.</p>
-        ) : (
-          <div>
-            {items.map((item, index) => (
-              <div
-                key={item._id}
-                className={`py-4 ${index !== items.length - 1 ? 'border-b border-gray-200' : ''}`}
-              >
-                <p className="text-lg font-semibold text-gray-800">{item.itemName}</p>
-                <p className="text-sm text-gray-600">Code: {item.itemCode}</p>
-                <p className="text-sm text-gray-600 capitalize">Type: {item.type}</p>
-                {item.subcategory && (
-                  <p className="text-sm text-gray-600">Subcategory: {item.subcategory}</p>
-                )}
-                {item.remarks && (
-                  <p className="text-sm text-gray-600">Remarks: {item.remarks}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
