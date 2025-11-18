@@ -2,11 +2,6 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Paginator from '../common/Paginator';
 import cookies from "js-cookie";
-// import Navbar from './Navbar';
-
-// const api = axios.create({
-//   baseURL: "https://rewa-project.onrender.com/api",
-// });
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -14,7 +9,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // const token = localStorage.getItem("token");
     const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
@@ -42,7 +36,8 @@ const CustomerManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState("all"); // 'all', 'active', 'inactive'
+  const [filter, setFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // pagination state
   const [page, setPage] = useState(1);
@@ -80,8 +75,13 @@ const CustomerManagement = () => {
       return;
     }
 
+    const finalData = { ...formData };  
+    if (!finalData.email || finalData.email.trim() === "") {
+      finalData.email = `${finalData.phoneNumber}@noemail.com`;
+    }
+
     try {
-      const response = await api.post("/reception/customers", formData);
+      const response = await api.post("/reception/customers", finalData);
       alert("Customer registered successfully!");
       fetchCustomers();
       setFormData({
@@ -105,7 +105,6 @@ const CustomerManagement = () => {
   const validateFormData = (formData) => {
     const errors = [];
     if (!formData.name) errors.push("Name is required.");
-    if (!formData.email) errors.push("Email is required.");
     if (!formData.phoneNumber) errors.push("Phone number is required.");
     if (!formData.password) errors.push("Password is required.");
     if (!formData.firmName) errors.push("Firm name is required.");
@@ -115,20 +114,33 @@ const CustomerManagement = () => {
 
   const handleLogout = () => {
     cookies.remove("token");
-    window.location.href = "/"; // Redirect to login page
+    window.location.href = "/";
   };
 
-  // Filter customers based on the selected filter
+  // Filter and search customers
   const filteredCustomers = customers.filter((customer) => {
-    if (filter === "all") return true;
-    return filter === "active" ? customer.isActive : !customer.isActive;
+    // Status filter
+    const statusMatch = filter === "all" || 
+      (filter === "active" ? customer.isActive : !customer.isActive);
+    
+    // Search filter
+    const searchLower = searchQuery.toLowerCase();
+    const searchMatch = searchQuery === "" || 
+      customer.name?.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower) ||
+      customer.phoneNumber?.toLowerCase().includes(searchLower) ||
+      customer.firmName?.toLowerCase().includes(searchLower) ||
+      customer.userCode?.toLowerCase().includes(searchLower);
+    
+    return statusMatch && searchMatch;
   });
 
-  // derived pagination
-  // const filteredCustomers = customers.filter((customer) => {
-  //   if (filter === "all") return true;
-  //   return filter === "active" ? customer.isActive : !customer.isActive;
-  // });
+  // Reset to page 1 when search query or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filter]);
+
+  // Pagination
   const total = filteredCustomers.length;
   const startIdx = (page - 1) * pageSize;
   const endIdx = startIdx + pageSize;
@@ -136,9 +148,8 @@ const CustomerManagement = () => {
 
   return (
     <div className="min-h-screen bg-green-100">
-      {/* Main Content */}
       <div className="max-w-8xl mx-auto p-6">
-        <div className="flex justify-center mb-6 ">
+        <div className="flex justify-center mb-6">
           <h1 className="text-3xl font-bold text-black">Customer Management</h1>
         </div>
 
@@ -147,7 +158,6 @@ const CustomerManagement = () => {
           <p className="text-blue-500 text-center">Loading customers...</p>
         )}
 
-        {/* Show the registration form if showForm is true */}
         {showForm ? (
           <div className="mx-64">
             <div className="bg-stone-200 shadow-lg rounded-lg p-6 mb-8">
@@ -176,7 +186,7 @@ const CustomerManagement = () => {
                       name={key}
                       value={formData[key]}
                       onChange={handleChange}
-                      required={key !== "gstNumber" && key !== "panNumber"}
+                      required={key !== "gstNumber" && key !== "panNumber" && key !== "email"}
                       className="mt-1 p-2 border border-gray-400 rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
                       placeholder={`Enter ${key}`}
                     />
@@ -194,111 +204,134 @@ const CustomerManagement = () => {
             </div>
           </div>
         ) : (
-        <div className="mx-44">
-          <div className="bg-stone-200 shadow-xl rounded-xl p-6 w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Customer List
-              </h2>
-              <button
-                onClick={() => setShowForm(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-xl shadow-xl hover:bg-green-700 transition duration-300"
-              >
-                + Create New User
-              </button>
-            </div>
-            {/* Filter Controls */}
-            <div className="mb-4">
-              <label className="mr-2 text-gray-700">Filter by Status:</label>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="p-2 border rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
+          <div className="mx-44">
+            <div className="bg-stone-200 shadow-xl rounded-xl p-6 w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Customer List
+                </h2>
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-xl shadow-xl hover:bg-green-700 transition duration-300"
+                >
+                  + Create New User
+                </button>
+              </div>
 
-            <div className="overflow-x-auto shadow-xl rounded-xl">
-              <table className="w-full border border-gray-500 rounded-lg">
-                <thead>
-                  <tr className="bg-gray-400">
-                    {[
-                      "User Code",
-                      "Name",
-                      "Email",
-                      "Phone",
-                      "Firm",
-                      "Status",
-                      "Created At",
-                    ].map((header) => (
-                      <th
-                        key={header}
-                        className="py-3 px-4 border-b border-gray-500 text-left text-gray-700"
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedCustomers.map((customer) => (
-                    <tr
-                      key={customer.userCode}
-                      className="border border-gray-500 hover:bg-gray-100 transition duration-200"
-                    >
-                      <td className="py-3 px-4 text-gray-700">
-                        {customer.userCode}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {customer.name}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {customer.email}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {customer.phoneNumber}
-                      </td>
-                      <td className="py-3 px-4 text-gray-700">
-                        {customer.firmName}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-1 rounded text-white ${
-                            customer.isActive ? "bg-green-500" : "bg-red-500"
-                          }`}
+            {/* Search + Filter Row */}
+            <div className="mb-4 flex flex-col md:flex-row gap-4 items-center">
+              
+              {/* Search Bar */}
+              <input
+                type="text"
+                placeholder="Search by name, email, phone, firm, or user code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full md:w-2/3 p-3 border border-gray-400 rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
+              />
+
+              {/* Filter */}
+              <div className="flex items-center gap-2">
+                <label className="text-gray-700">Filter by Status:</label>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="p-2 border rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
+                >
+                  <option value="all">All</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+            </div>
+              <div className="overflow-x-auto shadow-xl rounded-xl">
+                <table className="w-full border border-gray-500 rounded-lg">
+                  <thead>
+                    <tr className="bg-gray-400">
+                      {[
+                        "User Code",
+                        "Name",
+                        "Email",
+                        "Phone",
+                        "Firm",
+                        "Status",
+                        "Created At",
+                      ].map((header) => (
+                        <th
+                          key={header}
+                          className="py-3 px-4 border-b border-gray-500 text-left text-gray-700"
                         >
-                          {customer.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-gray-700">
-                        {new Date(customer.createdAt).toLocaleDateString()}
-                      </td>
+                          {header}
+                        </th>
+                      ))}
                     </tr>
+                  </thead>
+                  <tbody>
+                    {pagedCustomers.length > 0 ? (
+                      pagedCustomers.map((customer) => (
+                        <tr
+                          key={customer.userCode}
+                          className="border border-gray-500 hover:bg-gray-100 transition duration-200"
+                        >
+                          <td className="py-3 px-4 text-gray-700">
+                            {customer.userCode}
+                          </td>
+                          <td className="py-3 px-4 text-gray-700">
+                            {customer.name}
+                          </td>
+                          <td className="py-3 px-4 text-gray-700">
+                            {customer.email}
+                          </td>
+                          <td className="py-3 px-4 text-gray-700">
+                            {customer.phoneNumber}
+                          </td>
+                          <td className="py-3 px-4 text-gray-700">
+                            {customer.firmName}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span
+                              className={`px-2 py-1 rounded text-white ${
+                                customer.isActive ? "bg-green-500" : "bg-red-500"
+                              }`}
+                            >
+                              {customer.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-2 text-gray-700">
+                            {new Date(customer.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="7" className="py-6 text-center text-gray-500">
+                          No customers found matching your search
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination controls */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-gray-600 whitespace-nowrap">
+                  Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
+                </div>
+                <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+                <select
+                  className="border rounded px-2 py-1 text-sm"
+                  value={pageSize}
+                  onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+                >
+                  {[5,10,20,50].map((n) => (
+                    <option key={n} value={n}>{n} / page</option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
             </div>
-          {/* pagination controls */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-600 whitespace-nowrap">
-              Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
-            </div>
-            <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
-            <select
-              className="border rounded px-2 py-1 text-sm"
-              value={pageSize}
-              onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
-            >
-              {[5,10,20,50].map((n) => (
-                <option key={n} value={n}>{n} / page</option>
-              ))}
-            </select>
           </div>
-          </div>
-        </div>
         )}
       </div>
     </div>
