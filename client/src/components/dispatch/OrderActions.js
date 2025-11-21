@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { BsThreeDotsVertical } from "react-icons/bs";
 
-const OrderActions = ({ order, updateOrderStatus, handleOrderSelection, handleCODSelection }) => {
+const OrderActions = ({ order, updateOrderStatus, handleOrderSelection }) => {
   const [open, setOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
   const menuRef = useRef(null);
@@ -62,7 +62,7 @@ const OrderActions = ({ order, updateOrderStatus, handleOrderSelection, handleCO
             Create Challan
           </button>
 
-          {order.paymentMethod === "COD" && (
+          {/* {order.paymentMethod === "COD" && (
             <button
               onClick={() => {
                 handleCODSelection(order);
@@ -72,7 +72,7 @@ const OrderActions = ({ order, updateOrderStatus, handleOrderSelection, handleCO
             >
               COD
             </button>
-          )}
+          )} */}
         </div>
       )}
     </div>

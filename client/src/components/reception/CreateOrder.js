@@ -733,6 +733,9 @@
 
 // export default CreateOrder;
 
+// =====================================================
+// Imports
+// =====================================================
 import React, { useReducer, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
@@ -747,7 +750,6 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // const token = localStorage.getItem('token');
     const token = cookies.get("token");
     if (token) {
       config.headers.Authorization = token.startsWith("Bearer ")
@@ -867,7 +869,10 @@ const PanelAccess = ({
           <input
             key={field}
             type={field === "email" ? "email" : "text"}
-            placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === "mobileNo" ? " (10 digits)" : ""}`}
+            placeholder={`Enter ${field === "email"
+              ? "Email (optional)"
+              : field.charAt(0).toUpperCase() + field.slice(1) + (field === "mobileNo" ? " (10 digits)" : "")
+              }`}
             value={state.customerInfo[field]}
             onChange={(e) =>
               dispatch({
@@ -915,9 +920,8 @@ const ProductSelection = ({
               <input
                 key={field}
                 type="text"
-                placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${
-                  field === "pinCode" ? " (6 digits)" : ""
-                }`}
+                placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === "pinCode" ? " (6 digits)" : ""
+                  }`}
                 value={state.shippingAddress[field]}
                 onChange={(e) =>
                   dispatch({
@@ -960,7 +964,8 @@ const ProductSelection = ({
               className="border p-2 rounded-xl shadow-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="COD">Cash on Delivery (COD)</option>
-              <option value="online">Online Payment</option>
+              <option value="UPI">UPI</option>
+              <option value="netBanking">Net Banking</option>
             </select>
           </div>
         </div>
@@ -985,18 +990,19 @@ const ProductSelection = ({
           <p className="text-gray-700">Type: {product.type}</p>
           <p className="text-gray-700">Category: {product.category}</p>
           <p className="font-semibold text-gray-700">Description:</p>
-          <p className="text-gray-700">{product.description
+          <p className="text-gray-700">
+            {product.description
               ? product.description.split(" ").slice(0, 12).join(" ") +
-                (product.description.split(" ").length > 12 ? "..." : "")
+              (product.description.split(" ").length > 12 ? "..." : "")
               : "N/A"}
           </p>
           <p className="text-gray-600">Price: ₹{product.price}</p>
           <p className="text-gray-600">Boxes: {product.boxes}</p>
           <input
             type="number"
-            min="230"
+            min="1"
             step="1"
-            placeholder="Boxes (min 230)"
+            placeholder="Boxes (min 1)"
             value={state.selectedProducts[product._id]?.boxes || ""}
             onChange={(e) => {
               const inputValue = e.target.value;
@@ -1014,6 +1020,14 @@ const ProductSelection = ({
               }
 
               const boxes = parseInt(inputValue, 10);
+
+              if (isNaN(boxes) || boxes < 1) {
+                toast.error(
+                  `Boxes for ${product.name} must be at least 1.`
+                );
+                return;
+              }
+
               dispatch({
                 type: "SET_FIELD",
                 field: "selectedProducts",
@@ -1021,7 +1035,7 @@ const ProductSelection = ({
                   ...state.selectedProducts,
                   [product._id]: {
                     ...product,
-                    boxes: boxes || undefined,
+                    boxes,
                     price:
                       state.selectedProducts[product._id]?.price ||
                       product.price,
@@ -1031,33 +1045,7 @@ const ProductSelection = ({
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {/* <input
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="Enter Price"
-            value={state.selectedProducts[product._id]?.price || ""}
-            onChange={(e) => {
-              const price = parseFloat(e.target.value);
-              if (price < 0 && e.target.value !== "") {
-                toast.error(`Price for ${product.name} cannot be negative.`);
-                return;
-              }
-              dispatch({
-                type: "SET_FIELD",
-                field: "selectedProducts",
-                value: {
-                  ...state.selectedProducts,
-                  [product._id]: {
-                    ...product,
-                    price: price || undefined,
-                    boxes: state.selectedProducts[product._id]?.boxes || 230,
-                  },
-                },
-              });
-            }}
-            className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          /> */}
+          {/* Price input kept commented as in original */}
         </div>
       ))}
     </div>
@@ -1077,30 +1065,6 @@ const ProductSelection = ({
     )}
   </div>
 );
-
-// const ProductDetails = ({ product }) => (
-//   <div className="bg-white p-6 rounded-lg shadow-xl mb-6">
-//     <h3 className="text-3xl font-semibold text-gray-800 mb-6">Product Details</h3>
-//     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-//       <div>
-//         <img
-//           src={product.image || '/placeholder-image.jpg'}
-//           alt={product.name}
-//           className="w-full h-80 object-cover rounded-lg mb-4"
-//           onError={(e) => { e.target.src = '/placeholder-image.jpg'; }}
-//         />
-//       </div>
-//       <div>
-//         <p className="text-2xl font-semibold text-gray-700 mb-4">Name: {product.name}</p>
-//         <p className="text-xl text-gray-600 mb-4">Price: ₹{product.price}</p>
-//         <p className="text-lg text-gray-600 mb-4">Category: {product.category || 'N/A'}</p>
-//         <p className="text-lg text-gray-600 mb-4">Boxes: {product.boxes}</p>
-//         <p className="text-lg text-gray-600 mb-4">Bottles per Box: {product.bottlesPerBox || 'N/A'}</p>
-//         <p className="text-lg text-gray-700 mb-4">{product.description || 'No description available'}</p>
-//       </div>
-//     </div>
-//   </div>
-// );
 
 const CreateOrder = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -1124,7 +1088,6 @@ const CreateOrder = () => {
           isMiscellaneous: false,
         },
       });
-      // localStorage.setItem('token', response.data.token);
       cookies.set("token", response.data.token);
       toast.success("User panel access granted");
     } catch (error) {
@@ -1159,11 +1122,14 @@ const CreateOrder = () => {
     }
     dispatch({ type: "SET_LOADING", field: "isLoadingMisc", value: true });
     try {
-      const response = await api.post("/reception/miscellaneous-panel-access", {
-        name,
-        email,
-        mobileNo,
-      });
+      // email is optional per API docs
+      const bodyPayload = { name, mobileNo };
+      if (email) bodyPayload.email = email;
+
+      const response = await api.post(
+        "/reception/miscellaneous-panel-access",
+        bodyPayload
+      );
       dispatch({
         type: "SET_SUCCESS",
         payload: {
@@ -1172,7 +1138,6 @@ const CreateOrder = () => {
           isMiscellaneous: true,
         },
       });
-      // localStorage.setItem('token', response.data.token);
       cookies.set("token", response.data.token);
       toast.success("Miscellaneous panel access granted");
     } catch (error) {
@@ -1214,7 +1179,6 @@ const CreateOrder = () => {
   const handleOrder = async () => {
     dispatch({ type: "SET_LOADING", field: "isLoadingOrder", value: true });
     try {
-      // Check if any products are selected
       const selectedProductsArray = Object.values(state.selectedProducts);
 
       if (selectedProductsArray.length === 0) {
@@ -1227,15 +1191,32 @@ const CreateOrder = () => {
         return;
       }
 
-      // Validate each product for minimum boxes requirement
-      const invalidProducts = selectedProductsArray.filter(
-        (product) => !product.boxes || product.boxes < 230
+      // Validate boxes >= 1 for all products (API: min 1)
+      const invalidBoxProducts = selectedProductsArray.filter(
+        (product) => !product.boxes || product.boxes < 1
+      );
+      if (invalidBoxProducts.length > 0) {
+        const names = invalidBoxProducts.map((p) => p.name).join(", ");
+        toast.error(
+          `Boxes must be at least 1 for: ${names}`
+        );
+        dispatch({
+          type: "SET_LOADING",
+          field: "isLoadingOrder",
+          value: false,
+        });
+        return;
+      }
+
+      // Regular customers: minimum 200 boxes total across all products
+      const totalBoxes = selectedProductsArray.reduce(
+        (sum, product) => sum + (Number(product.boxes) || 0),
+        0
       );
 
-      if (invalidProducts.length > 0) {
-        const productNames = invalidProducts.map(p => p.name).join(", ");
+      if (!state.isMiscellaneous && totalBoxes < 200) {
         toast.error(
-          `Boxes must be greater than or equal to 230 for: ${productNames}`
+          "Minimum 200 boxes required for regular customers (total across all products)."
         );
         dispatch({
           type: "SET_LOADING",
@@ -1245,40 +1226,16 @@ const CreateOrder = () => {
         return;
       }
 
-      // Validate products
-      const validOrderProducts = selectedProductsArray
-        .filter(
-          (product) =>
-            product &&
-            product._id &&
-            product.boxes >= 230 &&
-            product.price >= 0 &&
-            !isNaN(product.boxes) &&
-            !isNaN(product.price)
-        )
-        .map((product) => ({
-          productId: product._id,
-          boxes: product.boxes,
-          price: product.price,
-        }));
+      const validOrderProducts = selectedProductsArray.map((product) => ({
+        productId: product._id,
+        boxes: product.boxes,
+        price: product.price,
+      }));
 
-      if (validOrderProducts.length === 0) {
-        toast.error(
-          "Please select at least one product with minimum 230 boxes and valid price."
-        );
-        dispatch({
-          type: "SET_LOADING",
-          field: "isLoadingOrder",
-          value: false,
-        });
-        return;
-      }
-
-      // Prepare payload based on user type
       let payload;
 
       if (state.isMiscellaneous) {
-        // Payload for miscellaneous users
+        // Miscellaneous customers: no minimum box requirement, but shippingAddress is still required
         payload = {
           products: validOrderProducts,
           paymentMethod: state.paymentMethod,
@@ -1289,93 +1246,59 @@ const CreateOrder = () => {
             state: "Gujarat",
             pinCode: "380001",
           },
-          orderStatus: "pending",
+          // name & mobileNo required for miscellaneous per docs
+          name: state.customerInfo.name,
+          mobileNo: state.customerInfo.mobileNo,
         };
       } else {
-        // Payload for existing users - using the specified structure
-        payload = {
-          products: validOrderProducts,
-          paymentMethod: state.paymentMethod,
-          shippingAddress: state.shippingAddress,
-          deliveryChoice: state.deliveryChoice,
-        };
-        // Note: orderStatus is not included for existing users as per the specified payload
-      }
-
-      // Debug logging
-      // console.log('Creating order with payload:', JSON.stringify(payload, null, 2));
-      // console.log('Is Miscellaneous:', state.isMiscellaneous);
-      // console.log('Customer:', state.customer);
-      // console.log('Token being used:', localStorage.getItem('token'));
-      // console.log('API base URL:', process.env.REACT_APP_API);
-
-      // For miscellaneous orders
-      if (state.isMiscellaneous) {
-        const { name, mobileNo } = state.customerInfo;
-        if (!name || !mobileNo) {
-          toast.error(
-            "Name and mobile number are required for miscellaneous orders."
-          );
-          dispatch({
-            type: "SET_ERROR",
-            payload:
-              "Name and mobile number are required for miscellaneous orders.",
-          });
-          return;
-        }
-        payload.name = name;
-        payload.mobileNo = mobileNo;
-      } else {
-        // Validate shipping address for non-miscellaneous orders
+        // Regular customers
         const {
           address,
           city,
           state: addressState,
           pinCode,
         } = state.shippingAddress;
+
         if (!address || !city || !addressState || !pinCode) {
           toast.error("Complete shipping address with pin code is required.");
           dispatch({
             type: "SET_ERROR",
             payload: "Complete shipping address with pin code is required.",
           });
+          dispatch({
+            type: "SET_LOADING",
+            field: "isLoadingOrder",
+            value: false,
+          });
           return;
         }
+
         if (!/^\d{6}$/.test(pinCode)) {
           toast.error("Pin code must be 6 digits.");
           dispatch({
             type: "SET_ERROR",
             payload: "Pin code must be 6 digits.",
           });
+          dispatch({
+            type: "SET_LOADING",
+            field: "isLoadingOrder",
+            value: false,
+          });
           return;
         }
+
+        payload = {
+          products: validOrderProducts,
+          paymentMethod: state.paymentMethod,
+          deliveryChoice: state.deliveryChoice,
+          shippingAddress: state.shippingAddress,
+        };
       }
 
-      // Make API call
+      // API documentation: POST /orders (with reception auth)
+      // Based on your existing prefix usage, using /reception/orders
       const response = await api.post("/reception/user-panel/orders", payload);
 
-      // Debug logging for response
-      // console.log('Backend response:', JSON.stringify(response.data, null, 2));
-      // console.log('Order status in response:', response.data.order?.orderStatus);
-
-      // If order was created with 'preview' status for existing user, update it to 'processing'
-      // if (!state.isMiscellaneous && response.data.order?.orderStatus === 'preview') {
-      //   try {
-      //     console.log('Updating order status from preview to processing...');
-      //     const updateResponse = await api.patch(`/reception/orders/${response.data.order._id}/status`, {
-      //       status: 'processing'
-      //     });
-      //     console.log('Status update response:', updateResponse.data);
-      //     toast.success(`Order created and status updated to processing successfully`);
-      //   } catch (updateError) {
-      //     console.error('Error updating order status:', updateError);
-      //     toast.warning(`Order created but failed to update status to processing`);
-      //   }
-      // } else {
-      //   toast.success(`Order created successfully`);
-      // }
-
-      // Handle success
       dispatch({
         type: "SET_SUCCESS",
         payload: {
@@ -1392,14 +1315,15 @@ const CreateOrder = () => {
           isMiscellaneous: state.isMiscellaneous
             ? false
             : state.isMiscellaneous,
+          orderStatus: response.data?.message || "Order created successfully",
         },
       });
+
       if (state.isMiscellaneous) {
         resetPanelAccess();
-        toast.success(`Order created successfully`);
-      } else {
-        toast.success(`Order created successfully`);
       }
+
+      toast.success("Order created successfully");
     } catch (error) {
       const errorMessage =
         error.response?.data?.error ||
@@ -1463,7 +1387,6 @@ const CreateOrder = () => {
           <div className="bg-[#e5e3de] p-6 rounded-lg shadow-xl mb-6">
             <div className="flex flex-col gap-3">
               <h3 className="text-xl text-gray-800">
-                {" "}
                 Name: {state.customer.name}{" "}
                 {state.isMiscellaneous && " (Miscellaneous)"}
               </h3>
@@ -1512,7 +1435,10 @@ const CreateOrder = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {Object.values(state.selectedProducts).map((product) => (
-                <div key={product._id} className="border rounded-lg p-4 relative">
+                <div
+                  key={product._id}
+                  className="border rounded-lg p-4 relative"
+                >
                   {/* Trash Icon */}
                   <button
                     onClick={() => removeProduct(product._id)}
@@ -1563,7 +1489,12 @@ const CreateOrder = () => {
 
         {state.orderStatus && (
           <p
-            className={`mt-4 text-center ${state.orderStatus.includes("successfully") ? "text-green-600" : "text-red-600"}`}
+            className={`mt-4 text-center ${state.orderStatus.includes(
+              "successfully"
+            )
+              ? "text-green-600"
+              : "text-red-600"
+              }`}
           >
             {state.orderStatus}
           </p>

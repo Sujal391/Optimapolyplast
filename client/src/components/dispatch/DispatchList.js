@@ -47,8 +47,8 @@ const DispatchComponent = () => {
   const [showChallanModal, setShowChallanModal] = useState(false);
   const [generatedChallan, setGeneratedChallan] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState({});
-  const [showCODModal, setShowCODModal] = useState(false);
-  const [codStatus, setCodStatus] = useState("");
+  // const [showCODModal, setShowCODModal] = useState(false);
+  // const [codStatus, setCodStatus] = useState("");
 
   const fetchProcessingOrders = async () => {
     setIsLoading(true);
@@ -80,24 +80,24 @@ const DispatchComponent = () => {
     }
   };
 
-  const updateCODPaymentStatus = async (orderId) => {
-    try {
-      const response = await api.patch(`/dispatch/orders/${orderId}/cod-payment-status`, {
-        paymentStatus: codStatus,
-        notes: `Updated via dispatch interface on ${new Date().toLocaleDateString()}`,
-      });
-      toast.success(response.data.message || "COD payment status updated successfully");
-      setProcessingOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order._id === orderId ? { ...order, paymentStatus: codStatus } : order
-        )
-      );
-      setShowCODModal(false);
-      setCodStatus("");
-    } catch (error) {
-      toast.error(error.response?.data?.error || "Error updating COD payment status");
-    }
-  };
+  // const updateCODPaymentStatus = async (orderId) => {
+  //   try {
+  //     const response = await api.patch(`/dispatch/orders/${orderId}/cod-payment-status`, {
+  //       paymentStatus: codStatus,
+  //       notes: `Updated via dispatch interface on ${new Date().toLocaleDateString()}`,
+  //     });
+  //     toast.success(response.data.message || "COD payment status updated successfully");
+  //     setProcessingOrders((prevOrders) =>
+  //       prevOrders.map((order) =>
+  //         order._id === orderId ? { ...order, paymentStatus: codStatus } : order
+  //       )
+  //     );
+  //     setShowCODModal(false);
+  //     setCodStatus("");
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.error || "Error updating COD payment status");
+  //   }
+  // };
 
   const generateChallan = async () => {
     try {
@@ -157,26 +157,26 @@ const DispatchComponent = () => {
     setShowChallanModal(true);
   };
 
-  const handleCODSelection = (order) => {
-    if (order.paymentMethod !== "COD") {
-      toast.warning("This action is only available for COD orders");
-      return;
-    }
-    setSelectedOrder(order);
-    setCodStatus(order.paymentStatus);
-    setShowCODModal(true);
-  };
+  // const handleCODSelection = (order) => {
+  //   if (order.paymentMethod !== "COD") {
+  //     toast.warning("This action is only available for COD orders");
+  //     return;
+  //   }
+  //   setSelectedOrder(order);
+  //   setCodStatus(order.paymentStatus);
+  //   setShowCODModal(true);
+  // };
 
-  const handleStatusChange = (orderId, value) => {
-    setSelectedStatuses((prev) => ({ ...prev, [orderId]: value }));
-  };
+  // const handleStatusChange = (orderId, value) => {
+  //   setSelectedStatuses((prev) => ({ ...prev, [orderId]: value }));
+  // };
 
-  const handleUpdateClick = (order) => {
-    const newStatus = selectedStatuses[order._id];
-    if (newStatus && newStatus !== order.orderStatus) {
-      updateOrderStatus(order._id, newStatus);
-    }
-  };
+  // const handleUpdateClick = (order) => {
+  //   const newStatus = selectedStatuses[order._id];
+  //   if (newStatus && newStatus !== order.orderStatus) {
+  //     updateOrderStatus(order._id, newStatus);
+  //   }
+  // };
 
   useEffect(() => {
     const isValid = 
@@ -317,7 +317,7 @@ const DispatchComponent = () => {
                         order={order}
                         updateOrderStatus={updateOrderStatus}
                         handleOrderSelection={handleOrderSelection}
-                        handleCODSelection={handleCODSelection}
+                        // handleCODSelection={handleCODSelection}
                       />
                     </td>
                   </tr>
@@ -330,7 +330,7 @@ const DispatchComponent = () => {
         )}
       </div>
 
-      {showCODModal && selectedOrder && (
+      {/* {showCODModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 hover:scale-100">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Update COD Status</h2>
@@ -362,7 +362,7 @@ const DispatchComponent = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {showChallanModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">

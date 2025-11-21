@@ -75,9 +75,19 @@ const CustomerManagement = () => {
       return;
     }
 
-    const finalData = { ...formData };  
+        const finalData = { ...formData };
+
+    // Email is optional - if it's empty, don't send it at all
     if (!finalData.email || finalData.email.trim() === "") {
-      finalData.email = `${finalData.phoneNumber}@noemail.com`;
+      delete finalData.email;
+    }
+
+    // Optional: also avoid sending empty gst/pan
+    if (!finalData.gstNumber || finalData.gstNumber.trim() === "") {
+      delete finalData.gstNumber;
+    }
+    if (!finalData.panNumber || finalData.panNumber.trim() === "") {
+      delete finalData.panNumber;
     }
 
     try {
