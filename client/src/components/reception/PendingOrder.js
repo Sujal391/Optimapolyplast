@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,348 +9,237 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../ui/alert-dialog';
-import cookies from 'js-cookie';
-import Paginator from '../common/Paginator';
+} from "../ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
+import cookies from "js-cookie";
+import Paginator from "../common/Paginator";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
 });
-
-api.interceptors.request.use(
-  (config) => {
-    const token = cookies.get("token");
-    if (token) {
-      config.headers.Authorization = token.startsWith("Bearer ")
-        ? token
-        : `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+api.interceptors.request.use((config) => {
+  const token = cookies.get("token");
+  if (token) {
+    config.headers.Authorization = token.startsWith("Bearer ")
+      ? token
+      : `Bearer ${token}`;
+  }
+  return config;
+});
 
 const PendingOrders = () => {
   const [pendingOrders, setPendingOrders] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  // modals
   const [priceUpdateModal, setPriceUpdateModal] = useState({
     isOpen: false,
     details: [],
-    orderId: null
+    orderId: null,
   });
   const [successDialog, setSuccessDialog] = useState({
     isOpen: false,
-    message: ''
+    message: "",
   });
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     order: null,
     priceUpdates: [],
   });
+  const [detailsModal, setDetailsModal] = useState({
+    isOpen: false,
+    order: null,
+  });
 
-  // pagination state
+  // pagination
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-
-  // Fetch Pending Orders
+  // fetch orders
   const fetchPendingOrders = async () => {
     setLoading(true);
     try {
-      // Try to fetch from the specific pending endpoint first
       const response = await api.get("/reception/orders/pending");
-      console.log(response.data); // Log the response to inspect the structure
       const pendingOrders = response.data.orders || [];
-
-      // If no orders found, try fetching from history and filter for pending status
-      if (pendingOrders.length === 0) {
-        try {
-          const historyResponse = await api.get("/reception/orders/history");
-          const allOrders = historyResponse.data.orders || [];
-
-          // Filter orders with pending status
-          const filteredPendingOrders = allOrders.filter(order =>
-            order.orderStatus?.toLowerCase() === 'pending'
-          );
-
-          setPendingOrders(filteredPendingOrders);
-        } catch (historyErr) {
-          console.error('Error fetching from history:', historyErr);
-          setPendingOrders([]);
-        }
-      } else {
-        setPendingOrders(pendingOrders);
-      }
-    } catch (err) {
-      console.error('Error fetching from pending endpoint:', err);
-      // Fallback: fetch from history and filter for pending status
-      try {
-        const historyResponse = await api.get("/reception/orders/history");
-        const allOrders = historyResponse.data.orders || [];
-
-        // Filter orders with pending status
-        const filteredPendingOrders = allOrders.filter(order =>
-          order.orderStatus?.toLowerCase() === 'pending'
-        );
-
-        setPendingOrders(filteredPendingOrders);
-      } catch (fallbackErr) {
-        console.error('Error fetching from history:', fallbackErr);
-        setError('Error fetching pending orders');
-      }
+      // if (pendingOrders.length === 0) {
+      //   const historyResponse = await api.get("/reception/orders/history"); //if pending payment list is 0 then history api will call
+      //   const allOrders = historyResponse.data.orders || [];
+      //   setPendingOrders(
+      //     allOrders.filter((o) => o.orderStatus?.toLowerCase() === "pending")
+      //   );
+      // } else setPendingOrders(pendingOrders);
+    } catch {
+      setError("Error fetching pending orders");
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchPendingOrders();
+  }, []);
 
-  // Update Order Status to Processing
+  // update order
   const updateOrderStatus = async (orderId) => {
     try {
-      const response = await api.patch(`/reception/orders/${orderId}/status`, { status: 'processing' });
+      const response = await api.patch(`/reception/orders/${orderId}/status`, {
+        status: "processing",
+      });
+      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
 
-      // Remove the order from the pending orders list since it's no longer pending
-      setPendingOrders(prevOrders =>
-        prevOrders.filter(order => order._id !== orderId)
-      );
-
-      // Check if prices were updated
       if (response.data.priceUpdated && response.data.priceUpdateDetails) {
         setPriceUpdateModal({
           isOpen: true,
           details: response.data.priceUpdateDetails,
-          orderId: orderId
+          orderId,
         });
-      } else {
-        setSuccessDialog({
-          isOpen: true,
-          message: response.data.message
-        });
-      }
-    } catch (err) {
-      setError('Error updating order status');
+      } else setSuccessDialog({ isOpen: true, message: response.data.message });
+    } catch {
+      setError("Error updating order status");
     }
   };
 
-  // Close price update modal
-  const closePriceUpdateModal = () => {
-    setPriceUpdateModal({
-      isOpen: false,
-      details: [],
-      orderId: null
-    });
-  };
-
-  // Get Payment Status Color
-  const getPaymentStatusColor = (status) => {
-    const colors = {
-      'paid': 'text-green-600',
-      'pending': 'text-yellow-600',
-      'failed': 'text-red-600'
-    };
-    return colors[status?.toLowerCase()] || 'text-gray-600';
-  };
-
-  // Format Shipping Address
-  const formatShippingAddress = (address) => {
-    if (!address || typeof address !== 'object') return 'N/A';
-    const { address: street, city, state, pinCode } = address;
-    return `${street || ''}, ${city || ''}, ${state || ''} ${pinCode || ''}`.trim();
-  };
-
-  // Format date
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-IN');
-  };
-
-  // New handler for Mark as Processing
   const handleMarkAsProcessing = (order) => {
-    // Always check for price updates
-    if (order.priceUpdated && order.priceUpdateHistory && order.priceUpdateHistory.length > 0) {
+    if (order.priceUpdated && order.priceUpdateHistory?.length > 0) {
       setConfirmDialog({
         isOpen: true,
         order,
         priceUpdates: order.priceUpdateHistory,
       });
-    } else {
-      updateOrderStatus(order._id);
-    }
+    } else updateOrderStatus(order._id);
   };
 
-  useEffect(() => {
-    fetchPendingOrders();
-  }, []);
+  const filteredOrders = pendingOrders.filter((order) => {
+    const s = search.toLowerCase();
+    return (
+      order._id.toLowerCase().includes(s) ||
+      order.user?.name?.toLowerCase().includes(s) ||
+      order.user?.email?.toLowerCase().includes(s) ||
+      order.user?.phoneNumber?.toLowerCase().includes(s) ||
+      order.user?.customerDetails?.firmName?.toLowerCase().includes(s) ||
+      order.user?.customerDetails?.userCode?.toLowerCase().includes(s)
+    );
+  });
 
-  // derived pagination
-  const total = pendingOrders.length;
+  // pagination logic
+  const total = filteredOrders.length;
   const startIdx = (page - 1) * pageSize;
   const endIdx = startIdx + pageSize;
-  const pagedOrders = pendingOrders.slice(startIdx, endIdx);
+  const pagedOrders = filteredOrders.slice(startIdx, endIdx);
+
+  const getPaymentStatusColor = (status) => {
+    const colors = {
+      paid: "text-green-600",
+      pending: "text-yellow-600",
+      failed: "text-red-600",
+    };
+    return colors[status?.toLowerCase()] || "text-gray-600";
+  };
+
+  const formatShippingAddress = (a) => {
+    if (!a) return "N/A";
+    return `${a.address || ""}, ${a.city || ""}, ${a.state || ""} ${a.pinCode || ""}`;
+  };
+
+  const formatDate = (d) => {
+    if (!d) return "N/A";
+    return new Date(d).toLocaleString("en-IN");
+  };
 
   return (
-  <div className="bg-green-100 min-h-screen">
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold text-center mb-6">Pending Orders</h1>
-      {error && <p className="text-red-500">{error}</p>}
-      {loading && <p className="text-blue-500">Loading pending orders...</p>}
+    <div className="bg-green-100 min-h-screen p-4">
+      <div className="container mx-auto">
+        <h1 className="text-2xl font-bold text-center mb-6">Pending Orders</h1>
 
-      {/* Price Update Alert Dialog */}
-      <AlertDialog open={priceUpdateModal.isOpen} onOpenChange={(open) => !open && closePriceUpdateModal()}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Price Update Notice</AlertDialogTitle>
-            <AlertDialogDescription>
-              {priceUpdateModal.details.length > 0 ? (
-                <ul className="mb-2">
-                  {priceUpdateModal.details.map((detail, idx) => (
-                    <li key={idx} className="mb-1">
-                      Price for <b>{detail.product?.name || 'Product'}</b> increased from <b>₹{detail.oldPrice}</b> to <b>₹{detail.newPrice}</b>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>Some product prices have changed.</p>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={closePriceUpdateModal}>
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* Success Alert Dialog */}
-      <AlertDialog open={successDialog.isOpen} onOpenChange={(open) => !open && setSuccessDialog({ isOpen: false, message: '' })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Order Status Updated</AlertDialogTitle>
-            <AlertDialogDescription>
-              {successDialog.message}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setSuccessDialog({ isOpen: false, message: '' })}>
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      {/* Price Update Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] })}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Price Update Detected</AlertDialogTitle>
-            <AlertDialogDescription>
-              {/* <ul className="mb-2">
-                {confirmDialog.priceUpdates.map((detail, idx) => (
-                  <li key={idx} className="mb-1">
-                    Price for <b>{detail.product?.name || 'Product'}</b> changed from <b>₹{detail.oldPrice}</b> to <b>₹{detail.newPrice}</b>
-                  </li>
-                ))}
-              </ul> */}
-              <ul className="mb-2">
-                {(() => {
-                  const detail = confirmDialog.priceUpdates[confirmDialog.priceUpdates.length - 1];
-                  return detail ? (
-                    <li className="mb-1">
-                      Price for <b>{detail.product?.name || 'Product'}</b> changed from <b>₹{detail.oldPrice}</b> to <b>₹{detail.newPrice}</b>
-                    </li>
-                  ) : null;
-                })()}
-              </ul>
-              Do you want to continue processing this order?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] })}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setConfirmDialog({ isOpen: false, order: null, priceUpdates: [] });
-              if (confirmDialog.order) updateOrderStatus(confirmDialog.order._id);
-            }}>
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Search */}
+        <div className="mb-4 flex justify-end">
+          <input
+            type="text"
+            placeholder="Search orders..."
+            className="px-3 py-2 border rounded w-full sm:w-72 shadow-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-      <div>
-        <h2 className="text-xl font-semibold mb-4">List of Pending Orders</h2>
-        <div className="overflow-x-auto shadow-xl rounded-xl">
-          <table className="min-w-full bg-stone-100 border">
-            <thead>
-              <tr className="bg-gray-400">
-                <th className="py-2 px-4 border-b">Order ID</th>
-                <th className="py-2 px-4 border-b">Customer Name</th>
-                <th className="py-2 px-4 border-b">Email</th>
-                <th className="py-2 px-4 border-b">Phone Number</th>
-                <th className="py-2 px-4 border-b">Firm Name</th>
-                <th className="py-2 px-4 border-b">Shipping Address</th>
-                <th className="py-2 px-4 border-b">User Code</th>
-                <th className="py-2 px-4 border-b">Order Status</th>
-                <th className="py-2 px-4 border-b">Payment Status</th>
-                <th className="py-2 px-4 border-b">Payment Method</th>
-                <th className="py-2 px-4 border-b">Quantity</th>
-                <th className="py-2 px-4 border-b">Total Amount</th>
-                <th className="py-2 px-4 border-b">Action</th>
+        {/* TABLE */}
+        {/*  TABLE  */}
+        <div className="overflow-y-auto shadow-xl rounded-xl bg-white">
+          <table className="min-w-full text-sm table-auto">
+            {" "}
+            {/* 👈 changed for free width */}
+            <thead className="bg-gray-300 text-gray-700">
+              <tr>
+                <th className="px-4 py-2">Order ID</th> {/* 👈 NEW */}
+                <th className="px-4 py-2">User Code</th>
+                <th className="px-4 py-2">Date & Time</th>
+                <th className="px-4 py-2">Customer</th>
+                <th className="px-4 py-2">Phone</th>
+                <th className="px-4 py-2">Firm Name</th>
+                <th className="px-4 py-2">Payment Status</th>
+                <th className="px-4 py-2">Total</th>
+                <th className="px-4 py-2 text-center">Action</th>
               </tr>
             </thead>
             <tbody>
-              {pagedOrders.length > 0 ? (
-                pagedOrders.map((order) => {
-                  // Calculate Total Amount
-                  const totalAmount = order.products.reduce((sum, item) => {
-                    if (item.product && item.product.price) {
-                      const quantity = item.quantity ? item.quantity : 1;
-                      return sum + item.product.price * quantity;
-                    }
-                    return sum;
-                  }, 0);
-
-                  return (
-                    <tr key={order._id}>
-                      <td className="py-2 px-4 border-b">{order._id}</td>
-                      <td className="py-2 px-4 border-b">{order.user?.name || "N/A"}</td>
-                      <td className="py-2 px-4 border-b">{order.user?.email || "N/A"}</td>
-                      <td className="py-2 px-4 border-b">{order.user?.phoneNumber || "N/A"}</td>
-                      <td className="py-2 px-4 border-b">{order.user?.customerDetails?.firmName || 'N/A'}</td>
-                      <td className="py-2 px-4 border-b">{formatShippingAddress(order.shippingAddress)}</td>
-                      <td className="py-2 px-4 border-b">{order.user?.customerDetails?.userCode || '(Miscellaneous)'}</td>
-                      <td className="py-2 px-4 border-b">{order.orderStatus}</td>
-                      <td className={`py-2 px-4 border-b font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                        {order.paymentStatus}
-                      </td>
-                      <td className="py-2 px-4 border-b">{order.paymentMethod}</td>
-                      <td className="py-2 px-4 border-b">
-                        {order.products.map((item, index) => (
-                          <div key={index} className="mb-1">
-                            {item.product?.name || 'N/A'}: {item.quantity || 1}
-                          </div>
-                        ))}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        {typeof order.totalAmount === 'number'
-                          ? `₹${order.totalAmount.toFixed(2)}`
-                          : totalAmount > 0
-                          ? `₹${totalAmount.toFixed(2)}`
-                          : 'N/A'}
-                      </td>
-                      <td className="py-2 px-4 border-b">
-                        <button
-                          onClick={() => handleMarkAsProcessing(order)}
-                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          Mark as Processing
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
+              {pagedOrders.length ? (
+                pagedOrders.map((order) => (
+                  <tr key={order._id} className="border-b hover:bg-gray-50">
+                    <td className="px-4 py-2">{order.orderId}</td>{" "}
+                    {/* 👈 NEW */}
+                    <td className="px-4 py-2">
+                      {order.user?.customerDetails?.userCode || "(Misc)"}
+                    </td>
+                    <td className="px-4 py-2">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-2">{order.user?.name || "N/A"}</td>
+                    <td className="px-4 py-2">
+                      {order.user?.phoneNumber || "N/A"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {order.user?.customerDetails?.firmName || "N/A"}
+                    </td>
+                    <td
+                      className={`px-4 py-2 font-semibold ${getPaymentStatusColor(order.paymentStatus)}`}
+                    >
+                      {order.paymentStatus}
+                    </td>
+                    <td className="px-4 py-2">
+                      ₹{order.totalAmountWithDelivery}
+                    </td>{" "}
+                    {/* 👈 UPDATED */}
+                    <td className="px-4 py-2 text-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="p-2 rounded hover:bg-gray-200">
+                          <MoreVertical size={18} />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setDetailsModal({ isOpen: true, order })
+                            }
+                          >
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleMarkAsProcessing(order)}
+                          >
+                            Mark as Processing
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
               ) : (
                 <tr>
-                  <td className="py-2 px-4 border-b text-center" colSpan="13">
+                  <td colSpan="9" className="text-center py-4">
                     No pending orders found.
                   </td>
                 </tr>
@@ -358,25 +247,105 @@ const PendingOrders = () => {
             </tbody>
           </table>
         </div>
-        {/* pagination controls */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="text-sm text-gray-600 whitespace-nowrap">
-            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
-          </div>
-          <Paginator page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+
+        {/* PAGINATION */}
+        <div className="mt-4 flex items-center justify-between flex-wrap">
+          <span className="text-sm">
+            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of{" "}
+            {total}
+          </span>
+          <Paginator
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
           <select
-            className="border rounded px-2 py-1 text-sm"
+            className="border rounded px-2 py-1"
             value={pageSize}
-            onChange={(e) => { setPage(1); setPageSize(parseInt(e.target.value, 10)); }}
+            onChange={(e) => {
+              setPage(1);
+              setPageSize(parseInt(e.target.value));
+            }}
           >
-            {[5,10,20,50].map((n) => (
-              <option key={n} value={n}>{n} / page</option>
+            {[5, 10, 20].map((n) => (
+              <option key={n} value={n}>
+                {n} / page
+              </option>
             ))}
           </select>
         </div>
       </div>
+
+      {/*  VIEW DETAILS MODAL  */}
+      {detailsModal.isOpen && detailsModal.order && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white max-w-3xl w-full mx-4 rounded-lg p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">
+              Order Details – {detailsModal.order.orderId}
+            </h2>
+
+            {/* CUSTOMER */}
+            <div className="mb-4 text-sm">
+              <p>
+                <strong>Firm:</strong>{" "}
+                {detailsModal.order.user?.customerDetails?.firmName}
+              </p>
+              <p>
+                <strong>Name:</strong> {detailsModal.order.user?.name}
+              </p>
+              <p>
+                <strong>Email:</strong> {detailsModal.order.user?.email}
+              </p>
+              <p>
+                <strong>Phone:</strong> {detailsModal.order.user?.phoneNumber}
+              </p>
+            </div>
+
+            {/* PRODUCTS */}
+            <h3 className="font-semibold mt-4 mb-2">Products:</h3>
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-200">
+                <tr>
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Boxes</th>
+                  <th className="px-3 py-2">Price</th>
+                  <th className="px-3 py-2">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detailsModal.order.products?.map((p, i) => (
+                  <tr key={i} className="border-b text-center">
+                    <td className="px-3 py-2">{p.product?.name}</td>
+                    <td className="px-3 py-2">{p.boxes}</td>
+                    <td className="px-3 py-2">₹{p.price}</td>
+                    <td className="px-3 py-2">₹{p.boxes * p.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* PAYMENT HISTORY */}
+            <h3 className="font-semibold mt-4 mb-2">Payment Status History:</h3>
+            {detailsModal.order.paymentStatusHistory?.map((h, idx) => (
+              <p key={idx} className="text-sm">
+                🔹 {h.status} — {formatDate(h.updatedAt)}
+              </p>
+            ))}
+
+            {/* CLOSE */}
+            <div className="mt-6 text-right">
+              <button
+                onClick={() => setDetailsModal({ isOpen: false, order: null })}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  </div>
   );
 };
 
