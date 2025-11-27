@@ -3,9 +3,11 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaDownload, FaPrint, FaSearch } from "react-icons/fa";
+import { FaDownload, FaPrint, FaSearch, FaEdit } from "react-icons/fa";
 import logo from '../../assets/logo1.png';
 import cookies from 'js-cookie';
+import ChallanListView from './ChallanListView';
+import RescheduleModal from './RescheduleModal';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -28,6 +30,9 @@ const DispatchComponent = () => {
   const [searchUserCode, setSearchUserCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [noChallansMessage, setNoChallansMessage] = useState("Enter a user code to view challan history.");
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [selectedChallan, setSelectedChallan] = useState(null);
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
 
   // Fetch processing orders
   const fetchProcessingOrders = async () => {
@@ -82,6 +87,30 @@ const DispatchComponent = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchChallansByUserCode(searchUserCode);
+  };
+
+  const rescheduleChallan = async (rescheduleData) => {
+    try {
+      setRescheduleLoading(true);
+      const response = await api.patch(
+        `/dispatch/challans/${rescheduleData.challanId}/reschedule`,
+        {
+          newDate: rescheduleData.newDate,
+          reason: rescheduleData.reason,
+        }
+      );
+      toast.success("Challan rescheduled successfully!");
+      setShowRescheduleModal(false);
+      setSelectedChallan(null);
+      // Refresh the challans list
+      if (searchUserCode) {
+        await fetchChallansByUserCode(searchUserCode);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Error rescheduling challan");
+    } finally {
+      setRescheduleLoading(false);
+    }
   };
 
   const getChallanHTML = (challan) => {
@@ -227,20 +256,47 @@ const DispatchComponent = () => {
                   <th className="py-2 px-4 border-b">Driver Name</th>
                   <th className="py-2 px-4 border-b">Mobile Number</th>
                   <th className="py-2 px-4 border-b">Receiver Name</th>
+                  <th className="py-2 px-4 border-b">Status</th>
+                  <th className="py-2 px-4 border-b">Split Info</th>
                   <th className="py-2 px-4 border-b">Total Amount</th>
                   <th className="py-2 px-4 border-b">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {userChallans.map((challan) => (
-                  <tr key={challan._id} className="border">
-                    <td className="py-2 px-4 border-b">{challan.invoiceNo}</td>
-                    <td className="py-2 px-4 border-b">{challan.userCode}</td>
-                    <td className="py-2 px-4 border-b">{challan.vehicleNo}</td>
-                    <td className="py-2 px-4 border-b">{challan.driverName}</td>
-                    <td className="py-2 px-4 border-b">{challan.mobileNo}</td>
-                    <td className="py-2 px-4 border-b">{challan.receiverName}</td>
-                    <td className="py-2 px-4 border-b">₹ {challan.totalAmount}</td>
+                {userChallans.map((challan) => {
+                  const getStatusBadge = (status) => {
+                    const statusConfig = {
+                      pending: { color: "bg-orange-100", textColor: "text-orange-800" },
+                      scheduled: { color: "bg-blue-100", textColor: "text-blue-800" },
+                      dispatched: { color: "bg-green-100", textColor: "text-green-800" },
+                    };
+                    const config = statusConfig[status] || statusConfig.pending;
+                    return (
+                      <span className={`px-2 py-1 rounded text-sm font-medium ${config.color} ${config.textColor}`}>
+                        {status || "pending"}
+                      </span>
+                    );
+                  };
+
+                  return (
+                    <tr key={challan._id} className="border">
+                      <td className="py-2 px-4 border-b">{challan.invoiceNo || challan.dcNo}</td>
+                      <td className="py-2 px-4 border-b">{challan.userCode}</td>
+                      <td className="py-2 px-4 border-b">{challan.vehicleNo}</td>
+                      <td className="py-2 px-4 border-b">{challan.driverName}</td>
+                      <td className="py-2 px-4 border-b">{challan.mobileNo}</td>
+                      <td className="py-2 px-4 border-b">{challan.receiverName}</td>
+                      <td className="py-2 px-4 border-b">{getStatusBadge(challan.status)}</td>
+                      <td className="py-2 px-4 border-b text-sm">
+                        {challan.splitInfo?.isSplit ? (
+                          <span className="text-blue-600 font-medium">
+                            Split {challan.splitInfo.splitIndex + 1}/{challan.splitInfo.totalSplits}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500">Single</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-4 border-b">₹ {challan.totalAmount}</td>
                     <td className="py-2 px-4 border-b flex gap-2">
                       <button onClick={() => downloadChallan(challan)} className="px-4 py-2 bg-blue-500 text-white rounded flex items-center">
                         <FaDownload className="mr-1" /> Download
@@ -248,9 +304,21 @@ const DispatchComponent = () => {
                       <button onClick={() => printChallan(challan)} className="px-4 py-2 bg-purple-500 text-white rounded flex items-center">
                         <FaPrint className="mr-1" /> Print
                       </button>
+                      {challan.status === "scheduled" && (
+                        <button
+                          onClick={() => {
+                            setSelectedChallan(challan);
+                            setShowRescheduleModal(true);
+                          }}
+                          className="px-4 py-2 bg-orange-500 text-white rounded flex items-center"
+                        >
+                          <FaEdit className="mr-1" /> Reschedule
+                        </button>
+                      )}
                     </td>
-                  </tr>
-                ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </>
@@ -258,6 +326,19 @@ const DispatchComponent = () => {
           <p className="text-center text-gray-500">{noChallansMessage}</p>
         )}
       </div>
+
+      {/* Reschedule Modal */}
+      {showRescheduleModal && selectedChallan && (
+        <RescheduleModal
+          challan={selectedChallan}
+          onClose={() => {
+            setShowRescheduleModal(false);
+            setSelectedChallan(null);
+          }}
+          onConfirm={rescheduleChallan}
+          loading={rescheduleLoading}
+        />
+      )}
     </div>
   );
 };

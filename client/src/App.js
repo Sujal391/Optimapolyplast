@@ -26,7 +26,7 @@ import RawMaterialSummary from './components/admin/RawMaterialSummary';
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';
 import ReceptionAttendance from './components/reception/Attendance';
-import DeliveryCharge from './components/reception/DeliveryCharge';
+// import DeliveryCharge from './components/reception/DeliveryCharge';
 import PendingOrder from './components/reception/PendingOrder';
 import CreateOrder from './components/reception/CreateOrder';
 import TotalOrder from './components/reception/TotalOrder';
@@ -167,14 +167,14 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/add-delivery-charges" element={
+        {/* <Route path="/add-delivery-charges" element={
           <PrivateRoute allowedRoles={['reception']}>
             <AuthLayout>
               <ReceptionDashboard />
               <DeliveryCharge />
             </AuthLayout>
           </PrivateRoute>
-        }/>
+        }/> */}
         <Route path="/create-order" element={
           <PrivateRoute allowedRoles={['reception']}>
             <AuthLayout>
