@@ -3,6 +3,7 @@ import ProductionOutcome from './ProductionOutcome';
 import PreformProduction from './PreformProduction';
 import CapProduction from './CapProduction';
 import BottleProduction from './BottleProduction';
+import DirectUsage from './DirectUsage';
 
 export default function Production() {
   const [activeTab, setActiveTab] = useState(0);
@@ -12,6 +13,7 @@ export default function Production() {
     { id: 1, label: 'Preform Production', component: PreformProduction },
     { id: 2, label: 'Cap Production', component: CapProduction },
     { id: 3, label: 'Bottle Production', component: BottleProduction },
+    { id: 4, label: 'Direct Usage', component: DirectUsage },
   ];
 
   const ActiveComponent = tabs[activeTab].component;

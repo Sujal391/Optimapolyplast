@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import {
-  recordWastage,
   updateWastageReuse,
   getWastageReport,
 } from "../../services/api/stock";
@@ -13,21 +12,11 @@ export default function Wastage() {
 
   const [wastageList, setWastageList] = useState([]);
 
-  // --- Form state ---
-  const [formData, setFormData] = useState({
-    wastageType: "",
-    source: "",
-    quantityGenerated: "",
-    quantityReused: 0,
-    reuseReference: "",
-    remarks: "",
-    date: new Date().toISOString().split("T")[0],
-  });
-
   // --- Reuse Modal State ---
   const [reuseModal, setReuseModal] = useState({
     open: false,
     wastageId: null,
+    wastageType: "",
     quantityGenerated: 0,
     quantityReused: 0,
   });
@@ -52,68 +41,24 @@ export default function Wastage() {
     loadWastage();
   }, []);
 
-  // Input Handlers
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-  };
-
   const handleReuseChange = (e) => {
     const { name, value } = e.target;
     setReuseData((p) => ({ ...p, [name]: value }));
   };
 
-  // Submit Add Wastage
-  const handleSubmit = async () => {
-    setError("");
-    setSuccess("");
-
-    if (!formData.wastageType || !formData.source || !formData.quantityGenerated) {
-      setError("Wastage Type, Source & Quantity Generated are required.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const payload = {
-        wastageType: formData.wastageType,
-        source: formData.source,
-        quantityGenerated: Number(formData.quantityGenerated),
-        quantityReused: Number(formData.quantityReused),
-        reuseReference: formData.reuseReference,
-        remarks: formData.remarks,
-        date: new Date(formData.date).toISOString(),
-      };
-
-      await recordWastage(payload);
-
-      setSuccess("Wastage recorded successfully!");
-      setFormData({
-        wastageType: "",
-        source: "",
-        quantityGenerated: "",
-        quantityReused: 0,
-        reuseReference: "",
-        remarks: "",
-        date: new Date().toISOString().split("T")[0],
-      });
-
-      loadWastage();
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      setError(err.message || "Failed to record wastage");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Submit Reuse
+  // Submit Reuse - Only for Type 1 wastage
   const handleReuseSubmit = async () => {
     setError("");
     setSuccess("");
 
-    const { wastageId, quantityGenerated, quantityReused } = reuseModal;
+    const { wastageId, wastageType, quantityGenerated, quantityReused } = reuseModal;
+
+    // Block reuse for Type 2 wastage
+    if (wastageType === "Type 2: Non-reusable / Scrap") {
+      setError("Type 2 (Non-reusable / Scrap) wastage cannot be reused.");
+      return;
+    }
+
     const newReuse = Number(reuseData.quantityReused);
 
     if (newReuse <= 0) {
@@ -129,6 +74,8 @@ export default function Wastage() {
     }
 
     try {
+      setLoading(true);
+
       const payload = {
         wastageId,
         quantityReused: newReuse,
@@ -139,13 +86,15 @@ export default function Wastage() {
       await updateWastageReuse(payload);
 
       setSuccess("Reuse recorded successfully!");
-      setReuseModal({ open: false, wastageId: null });
+      setReuseModal({ open: false, wastageId: null, wastageType: "" });
       setReuseData({ quantityReused: "", reuseReference: "", remarks: "" });
 
       await loadWastage();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err.message || "Failed to record reuse");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,99 +117,12 @@ export default function Wastage() {
           </div>
         )}
 
-        {/* ADD WASTAGE FORM */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-10">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
-            Record Wastage
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Wastage Type */}
-            <div>
-              <label className="block text-sm mb-1 text-gray-700">
-                Wastage Type *
-              </label>
-              <select
-                name="wastageType"
-                value={formData.wastageType}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Type</option>
-                <option value="Type 1: Reusable Wastage">
-                  Type 1: Reusable Wastage
-                </option>
-                <option value="Type 2: Non-reusable / Scrap">
-                  Type 2: Non-reusable / Scrap
-                </option>
-              </select>
-            </div>
-
-            {/* Source */}
-            <div>
-              <label className="block text-sm mb-1 text-gray-700">Source *</label>
-              <select
-                name="source"
-                value={formData.source}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Source</option>
-                <option value="Preform">Preform</option>
-                <option value="Cap">Cap</option>
-                <option value="Bottle">Bottle</option>
-              </select>
-            </div>
-
-            {/* Quantity */}
-            <div>
-              <label className="block text-sm mb-1">Quantity Generated *</label>
-              <input
-                type="number"
-                name="quantityGenerated"
-                value={formData.quantityGenerated}
-                onChange={handleChange}
-                placeholder="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Date */}
-            <div>
-              <label className="block text-sm mb-1">Date</label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Remarks */}
-            <div className="md:col-span-2">
-              <label className="block text-sm mb-1">Remarks</label>
-              <textarea
-                name="remarks"
-                rows="3"
-                value={formData.remarks}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Optional remarks"
-              ></textarea>
-            </div>
-          </div>
-
-          {/* Submit */}
-          <div className="mt-6 flex justify-end">
-            <Button
-              onClick={handleSubmit}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-              disabled={loading}
-            >
-              {loading ? "Recording..." : "Record Wastage"}
-            </Button>
-          </div>
+        {/* INFO NOTICE */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <p className="text-sm text-yellow-800">
+            <strong>Note:</strong> Wastage records are created automatically during production (Preform, Cap, or Bottle).
+            This page allows you to view all wastage records and reuse <strong>Type 1 (Reusable)</strong> wastage only.
+          </p>
         </div>
 
         {/* WASTAGE TABLE */}
@@ -326,19 +188,24 @@ export default function Wastage() {
                       </td>
 
                       <td className="px-4 py-3 border-b text-sm">
-                        <Button
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1"
-                          onClick={() =>
-                            setReuseModal({
-                              open: true,
-                              wastageId: item._id,
-                              quantityGenerated: item.quantityGenerated,
-                              quantityReused: item.quantityReused,
-                            })
-                          }
-                        >
-                          Reuse
-                        </Button>
+                        {item.wastageType === "Type 1: Reusable Wastage" ? (
+                          <Button
+                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1"
+                            onClick={() =>
+                              setReuseModal({
+                                open: true,
+                                wastageId: item._id,
+                                wastageType: item.wastageType,
+                                quantityGenerated: item.quantityGenerated,
+                                quantityReused: item.quantityReused,
+                              })
+                            }
+                          >
+                            Reuse
+                          </Button>
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">Cannot Reuse</span>
+                        )}
                       </td>
                     </tr>
                   ))}

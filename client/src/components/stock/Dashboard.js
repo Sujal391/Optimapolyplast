@@ -130,11 +130,11 @@ const Navbar = () => {
                   Raw Material
                 </Link>
                 <Link
-                  to="/stock/inward-entries"
-                  className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
+                  to="/stock/outcome"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
                   onClick={() => setIsStockDropdownOpen(false)}
                 >
-                  Inward Entries
+                  Outcome
                 </Link>
                 <Link
                   to="/stock/production"
@@ -144,29 +144,18 @@ const Navbar = () => {
                   Production
                 </Link>
                 <Link
-                  to="/stock/outcome"
-                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
-                  onClick={() => setIsStockDropdownOpen(false)}
-                >
-                  Outcome
-                </Link>
-                <Link
                   to="/stock/wastage"
                   className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
                   onClick={() => setIsStockDropdownOpen(false)}
                 >
                   Wastage
                 </Link>
-                <Link
-                  to="/stock/direct-usage"
-                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
-                  onClick={() => setIsStockDropdownOpen(false)}
-                >
-                  Direct Usage
-                </Link>
               </div>
             )}
           </div>
+          <Link to="/stock/reports" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+            Reports
+          </Link>
 
           {/* Profile Section */}
           <div className="relative flex items-center space-x-3" ref={profileRef}>

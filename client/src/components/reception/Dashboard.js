@@ -291,12 +291,12 @@ const Navbar = () => {
                 >
                   Pending Payments
                 </Link>
-                <Link
+                {/* <Link
                   to="/add-delivery-charges"
                   className="block px-4 py-2 hover:bg-teal-500"
                 >
                   Add Delivery Charges
-                </Link>
+                </Link> */}
                 <Link
                   to="/create-order"
                   className="block px-4 py-2 hover:bg-teal-500"

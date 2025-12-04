@@ -22,11 +22,14 @@ import CreateUser from './components/admin/CreateUser';
 import TotalUser from './components/reception/TotalUser';
 import OrderList from './components/admin/OrderList';
 import RawMaterialSummary from './components/admin/RawMaterialSummary';
+import CategoryManagement from './components/admin/CategoryManagement';
+import FormulaManagement from './components/admin/FormulaManagement';
+import ReportsExport from './components/admin/ReportsExport';
 
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';
 import ReceptionAttendance from './components/reception/Attendance';
-import DeliveryCharge from './components/reception/DeliveryCharge';
+// import DeliveryCharge from './components/reception/DeliveryCharge';
 import PendingOrder from './components/reception/PendingOrder';
 import CreateOrder from './components/reception/CreateOrder';
 import TotalOrder from './components/reception/TotalOrder';
@@ -50,7 +53,8 @@ import Inward from './components/stock/Inward/Inward';
 import Production from './components/stock/Production/Production';
 import Outcome from './components/stock/Outcome';
 import Wastage from './components/stock/Wastage';
-import DirectUsage from './components/stock/DirectUsage';
+import DirectUsage from './components/stock/Production/DirectUsage';
+import Reports from './components/stock/Report/Reports';
 
 // Shared Components
 import ProductList from './components/admin/ProductList';
@@ -126,6 +130,30 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
+        <Route path="/categories" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <CategoryManagement />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/formulas" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <FormulaManagement />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/export-reports" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <ReportsExport />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
 
         {/* Reception Panel Routes */}
         <Route path="/reception/dashboard" element={
@@ -167,14 +195,14 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/add-delivery-charges" element={
+        {/* <Route path="/add-delivery-charges" element={
           <PrivateRoute allowedRoles={['reception']}>
             <AuthLayout>
               <ReceptionDashboard />
               <DeliveryCharge />
             </AuthLayout>
           </PrivateRoute>
-        }/>
+        }/> */}
         <Route path="/create-order" element={
           <PrivateRoute allowedRoles={['reception']}>
             <AuthLayout>
@@ -269,6 +297,14 @@ function App() {
             <AuthLayout>
               <StockDashboard />
               <DirectUsage />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/reports" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Reports />
             </AuthLayout>
           </PrivateRoute>
         }/>
