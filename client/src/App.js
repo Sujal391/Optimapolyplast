@@ -22,6 +22,9 @@ import CreateUser from './components/admin/CreateUser';
 import TotalUser from './components/reception/TotalUser';
 import OrderList from './components/admin/OrderList';
 import RawMaterialSummary from './components/admin/RawMaterialSummary';
+import CategoryManagement from './components/admin/CategoryManagement';
+import FormulaManagement from './components/admin/FormulaManagement';
+import ReportsExport from './components/admin/ReportsExport';
 
 // Reception Panel Components
 import ReceptionDashboard from './components/reception/Dashboard';
@@ -50,7 +53,8 @@ import Inward from './components/stock/Inward/Inward';
 import Production from './components/stock/Production/Production';
 import Outcome from './components/stock/Outcome';
 import Wastage from './components/stock/Wastage';
-import DirectUsage from './components/stock/DirectUsage';
+import DirectUsage from './components/stock/Production/DirectUsage';
+import Reports from './components/stock/Report/Reports';
 
 // Shared Components
 import ProductList from './components/admin/ProductList';
@@ -123,6 +127,30 @@ function App() {
             <HeaderWithConditionalRender />
             <AuthLayout>
               <UploadBanner />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/categories" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <CategoryManagement />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/formulas" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <FormulaManagement />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/export-reports" element={
+          <PrivateRoute allowedRoles={['admin']}>
+            <HeaderWithConditionalRender />
+            <AuthLayout>
+              <ReportsExport />
             </AuthLayout>
           </PrivateRoute>
         }/>
@@ -269,6 +297,14 @@ function App() {
             <AuthLayout>
               <StockDashboard />
               <DirectUsage />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/reports" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Reports />
             </AuthLayout>
           </PrivateRoute>
         }/>

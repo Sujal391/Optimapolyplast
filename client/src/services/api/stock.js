@@ -1,4 +1,5 @@
 import apiClient from './client';
+import axios from 'axios';
 
 // ============ RAW MATERIAL APIs ============
 
@@ -149,7 +150,13 @@ export const fetchProductionOutcomes = async () => {
 /**
  * Record a production batch (General production outcome)
  * POST /production/outcome
- * @param {Object} data - { rawMaterialId, usedRawMaterialKg, outcomes: [{outcomeItemId, quantityCreatedKg}], wastageKg, remarks?, productionDate? }
+ * @param {Object} data - {
+ *   rawMaterials: [{materialId, quantityUsed}],
+ *   outcomes: [{outcomeItemId, quantityCreatedKg}],
+ *   wastageKg,
+ *   remarks?,
+ *   productionDate?
+ * }
  */
 export const recordProductionOutcome = async (data) => {
   try {
@@ -201,6 +208,137 @@ export const recordBottleProduction = async (data) => {
     throw error.response?.data || error;
   }
 };
+
+/**
+ * 2. Get Available Preform Types
+ * GET /preforms/available-types
+ */
+export const getAvailablePreformTypes = async () => {
+  try {
+    const response = await apiClient.get('stock/preforms/available-types');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 3. Get Available Preforms (Detailed availability)
+ * GET /preforms/available?type=
+ */
+export const getAvailablePreforms = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/preforms/available', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 4. Get Available Caps (Detailed availability)
+ * GET /caps/available?type=
+ */
+export const getAvailableCaps = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/caps/available', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 5. Get Preform Types (ALL types, for dropdown)
+ * GET /preforms/types
+ */
+export const getPreformTypes = async () => {
+  try {
+    const response = await apiClient.get('stock/preforms/types');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 6. Get Cap Types (ALL types, for dropdown)
+ * GET /caps/types
+ */
+export const getCapTypes = async () => {
+  try {
+    const response = await apiClient.get('stock/caps/types');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 7. Get Preform Production List (Paginated)
+ * GET /production/preform
+ */
+export const getPreformProductions = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/production/preform', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 8. Get Cap Production List (Paginated)
+ * GET /production/cap
+ */
+export const getCapProductions = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/production/cap', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 9. Check Material Availability for Bottle Production
+ * GET /production/check-availability
+ */
+export const checkMaterialAvailability = async (params) => {
+  try {
+    const response = await apiClient.get('stock/production/check-availability', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 10. Check Bottle Production Availability (explicit capType)
+ * GET /production/check-bottle-availability
+ */
+export const checkBottleAvailability = async (params) => {
+  try {
+    const response = await apiClient.get('stock/production/check-bottle-availability', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * 11. Get Production Batches
+ * GET /production/batches
+ */
+export const getProductionBatches = async () => {
+  try {
+    const response = await apiClient.get('stock/production/batches');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
 
 // ============ OUTCOME ITEMS APIs ============
 

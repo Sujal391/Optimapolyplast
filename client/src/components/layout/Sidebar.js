@@ -161,7 +161,7 @@
 
 
 import React, { useState } from "react";
-import { FaBars, FaTimes, FaHome, FaUser, FaProductHunt,FaCalendarCheck, FaBullhorn, FaShoppingCart, FaUserPlus, FaBox, FaChevronDown } from "react-icons/fa";
+import { FaBars, FaTimes, FaHome, FaUser, FaProductHunt,FaCalendarCheck, FaBullhorn, FaShoppingCart, FaUserPlus, FaBox, FaChevronDown, FaThList, FaDownload } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 import logo from "../../assets/logo1.png";
 
@@ -183,6 +183,9 @@ const Sidebar = () => {
     { path: "/marketing", icon: FaBullhorn, label: "Marketing" },
     { path: "/createUser", icon: FaUserPlus, label: "Create Panels" },
     { path: "/upload-banner", icon: FaUserPlus, label: "Upload Banner" },
+    { path: "/categories", icon: FaThList, label: "Categories" },
+    { path: "/formulas", icon: FaBox, label: "Formulas" },
+    { path: "/export-reports", icon: FaDownload, label: "Export Reports" },
   ];
 
   // Stock dropdown items

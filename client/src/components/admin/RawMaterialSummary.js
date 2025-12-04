@@ -102,16 +102,26 @@ export default function RawMaterialSummary() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Raw Material', 'Item Code', 'Remarks', 'Total Inward (Kg)', 'Total Used (Kg)', 'Available (Kg)', 'Wastage (%)', 'Created At'];
+    const headers = ['Raw Material', 'Item Code', 'Unit', 'Min Stock Level', 'Total Inward (Kg)', 'Total Used (Kg)', 'Total Direct Used (Kg)', 'Available (Kg)', 'Usage Rate (%)', 'Wastage (%)', 'Wastage Generated (Kg)', 'Wastage Reused (Kg)', 'Wastage Scrapped (Kg)', 'Stock Status', 'Needs Reorder', 'Entry Count', 'Production Count', 'Last Entry Date'];
     const rows = sortedData.map(item => [
       item.rawMaterial?.itemName || '',
       item.rawMaterial?.itemCode || '',
-      item.rawMaterial?.remarks || '',
+      item.rawMaterial?.unit || '',
+      item.rawMaterial?.minStockLevel || 0,
       item.totalInwardKg || 0,
       item.totalUsedKg || 0,
+      item.totalDirectUsedKg || 0,
       item.availableKg || 0,
+      item.usageRate || 0,
       item.wastagePercent || 0,
-      new Date(item.rawMaterial?.createdAt).toLocaleDateString('en-GB'),
+      item.wastageGenerated || 0,
+      item.wastageReused || 0,
+      item.wastageScrapped || 0,
+      item.stockStatus || 'NORMAL',
+      item.needsReorder ? 'Yes' : 'No',
+      item.entryCount || 0,
+      item.productionCount || 0,
+      item.lastEntryDate ? new Date(item.lastEntryDate).toLocaleDateString('en-GB') : '',
     ]);
 
     const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
@@ -127,16 +137,26 @@ export default function RawMaterialSummary() {
   };
 
   const copyToClipboard = () => {
-    const headers = ['Raw Material', 'Item Code', 'Remarks', 'Total Inward (Kg)', 'Total Used (Kg)', 'Available (Kg)', 'Wastage (%)', 'Created At'];
+    const headers = ['Raw Material', 'Item Code', 'Unit', 'Min Stock Level', 'Total Inward (Kg)', 'Total Used (Kg)', 'Total Direct Used (Kg)', 'Available (Kg)', 'Usage Rate (%)', 'Wastage (%)', 'Wastage Generated (Kg)', 'Wastage Reused (Kg)', 'Wastage Scrapped (Kg)', 'Stock Status', 'Needs Reorder', 'Entry Count', 'Production Count', 'Last Entry Date'];
     const rows = sortedData.map(item => [
       item.rawMaterial?.itemName || '',
       item.rawMaterial?.itemCode || '',
-      item.rawMaterial?.remarks || '',
+      item.rawMaterial?.unit || '',
+      item.rawMaterial?.minStockLevel || 0,
       item.totalInwardKg || 0,
       item.totalUsedKg || 0,
+      item.totalDirectUsedKg || 0,
       item.availableKg || 0,
+      item.usageRate || 0,
       item.wastagePercent || 0,
-      new Date(item.rawMaterial?.createdAt).toLocaleDateString('en-GB'),
+      item.wastageGenerated || 0,
+      item.wastageReused || 0,
+      item.wastageScrapped || 0,
+      item.stockStatus || 'NORMAL',
+      item.needsReorder ? 'Yes' : 'No',
+      item.entryCount || 0,
+      item.productionCount || 0,
+      item.lastEntryDate ? new Date(item.lastEntryDate).toLocaleDateString('en-GB') : '',
     ]);
 
     const text = [headers, ...rows].map(row => row.join('\t')).join('\n');
@@ -181,6 +201,54 @@ export default function RawMaterialSummary() {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
+                Total Materials
+              </Typography>
+              <Typography variant="h5">
+                {data?.overall?.totalMaterials || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Inward (Kg)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.totalInwardKg || 0).toFixed(2)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Used (Kg)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.totalUsedKg || 0).toFixed(2)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Available (Kg)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.totalAvailableKg || 0).toFixed(2)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
                 Total Produced (Kg)
               </Typography>
               <Typography variant="h5">
@@ -193,10 +261,10 @@ export default function RawMaterialSummary() {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Wastage (Kg)
+                Total Wastage Generated (Kg)
               </Typography>
               <Typography variant="h5">
-                {(data?.overall?.totalWastageKg || 0).toFixed(2)}
+                {(data?.overall?.totalWastageGenerated || 0).toFixed(2)}
               </Typography>
             </CardContent>
           </Card>
@@ -205,10 +273,106 @@ export default function RawMaterialSummary() {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Materials
+                Total Wastage Reused (Kg)
               </Typography>
               <Typography variant="h5">
-                {data?.summary?.length || 0}
+                {(data?.overall?.totalWastageReused || 0).toFixed(2)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Total Wastage Scrapped (Kg)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.totalWastageScrapped || 0).toFixed(2)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Wastage Reuse Rate (%)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.wastageReuseRate || 0).toFixed(2)}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Overall Efficiency (%)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.overallEfficiency || 0).toFixed(2)}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Material Utilization Rate (%)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.materialUtilizationRate || 0).toFixed(2)}%
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Low Stock Items
+              </Typography>
+              <Typography variant="h5">
+                {data?.overall?.lowStockItems || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Out of Stock Items
+              </Typography>
+              <Typography variant="h5">
+                {data?.overall?.outOfStockItems || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Needs Reorder Items
+              </Typography>
+              <Typography variant="h5">
+                {data?.overall?.needsReorderItems || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="textSecondary" gutterBottom>
+                Inward Trend (%)
+              </Typography>
+              <Typography variant="h5">
+                {(data?.overall?.inwardTrend || 0).toFixed(2)}%
               </Typography>
             </CardContent>
           </Card>
@@ -293,12 +457,13 @@ export default function RawMaterialSummary() {
                     />
                   </TableCell>
                   <TableCell><strong>Raw Material</strong></TableCell>
-                  <TableCell><strong>Remarks</strong></TableCell>
-                  <TableCell align="right"><strong>Total Inward (Kg)</strong></TableCell>
-                  <TableCell align="right"><strong>Total Used (Kg)</strong></TableCell>
+                  <TableCell align="right"><strong>Inward (Kg)</strong></TableCell>
+                  <TableCell align="right"><strong>Used (Kg)</strong></TableCell>
+                  <TableCell align="right"><strong>Direct Used (Kg)</strong></TableCell>
                   <TableCell align="right"><strong>Available (Kg)</strong></TableCell>
+                  <TableCell align="right"><strong>Usage Rate (%)</strong></TableCell>
                   <TableCell align="right"><strong>Wastage (%)</strong></TableCell>
-                  <TableCell><strong>Created At</strong></TableCell>
+                  <TableCell align="right"><strong>Stock Status</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -315,16 +480,23 @@ export default function RawMaterialSummary() {
                         {item.rawMaterial?.itemName || 'N/A'}
                       </Typography>
                       <Typography variant="caption" color="textSecondary">
-                        {item.rawMaterial?.itemCode || 'N/A'}
+                        {item.rawMaterial?.itemCode || 'N/A'} | Min: {item.rawMaterial?.minStockLevel || 0} {item.rawMaterial?.unit || ''}
                       </Typography>
                     </TableCell>
-                    <TableCell>{item.rawMaterial?.remarks || '-'}</TableCell>
                     <TableCell align="right">{(item.totalInwardKg || 0).toFixed(2)}</TableCell>
                     <TableCell align="right">{(item.totalUsedKg || 0).toFixed(2)}</TableCell>
+                    <TableCell align="right">{(item.totalDirectUsedKg || 0).toFixed(2)}</TableCell>
                     <TableCell align="right">{(item.availableKg || 0).toFixed(2)}</TableCell>
+                    <TableCell align="right">{(item.usageRate || 0).toFixed(2)}</TableCell>
                     <TableCell align="right">{(item.wastagePercent || 0).toFixed(2)}</TableCell>
-                    <TableCell>
-                      {new Date(item.rawMaterial?.createdAt).toLocaleDateString('en-GB')}
+                    <TableCell align="right">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        item.stockStatus === 'NORMAL' ? 'bg-green-100 text-green-800' :
+                        item.stockStatus === 'LOW' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {item.stockStatus || 'NORMAL'}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}

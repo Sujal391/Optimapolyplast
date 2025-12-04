@@ -1,13 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
-import { fetchRawMaterials, recordPreformProduction } from '../../../services/api/stock';
+import ProductionList from './ProductionList';
+import {
+  fetchRawMaterials,
+  recordPreformProduction,
+  // getPreformTypes,
+  getPreformProductions,
+  recordWastage
+} from '../../../services/api/stock';
 import { Trash2 } from 'lucide-react';
 
 export default function PreformProduction() {
   const [materials, setMaterials] = useState([]);
+  // const [preformTypes, setPreformTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Production list state
+  const [productionList, setProductionList] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [listError, setListError] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [listFilters, setListFilters] = useState({
+    preformType: '',
+    page: 1,
+    limit: 10
+  });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -25,9 +44,20 @@ export default function PreformProduction() {
     quantityUsed: '',
   });
 
-  // Fetch materials on mount
+  // Wastage form state
+  const [wastageData, setWastageData] = useState({
+    wastageType: '',
+    quantityGenerated: '',
+    quantityReused: 0,
+    reuseReference: '',
+    remarks: '',
+  });
+
+  // Fetch materials and preform types on mount
   useEffect(() => {
     fetchMaterials();
+    // loadPreformTypes();
+    loadProductionList();
   }, []);
 
   const fetchMaterials = async () => {
@@ -40,6 +70,35 @@ export default function PreformProduction() {
       console.error('Error fetching materials:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // const loadPreformTypes = async () => {
+  //   try {
+  //     const res = await getPreformTypes();
+  //     setPreformTypes(res?.data || []);
+  //   } catch (err) {
+  //     console.error('Error loading preform types:', err);
+  //   }
+  // };
+
+  const loadProductionList = async (filters = listFilters) => {
+    setListLoading(true);
+    setListError(null);
+    try {
+      const params = {
+        page: filters.page,
+        limit: filters.limit,
+        ...(filters.preformType && { preformType: filters.preformType })
+      };
+      const res = await getPreformProductions(params);
+      setProductionList(res?.data || []);
+      setPagination(res?.pagination || null);
+    } catch (err) {
+      setListError(err.message || 'Failed to load production list');
+      console.error('Error loading production list:', err);
+    } finally {
+      setListLoading(false);
     }
   };
 
@@ -90,6 +149,17 @@ export default function PreformProduction() {
     }));
   };
 
+  // Wastage input handler
+  const handleWastageChange = (e) => {
+    const { name, value } = e.target;
+    setWastageData(prev => ({
+      ...prev,
+      [name]: value,
+      // Reset quantityReused to 0 if Type 2 is selected
+      ...(name === 'wastageType' && value === 'Type 2: Non-reusable / Scrap' ? { quantityReused: 0 } : {})
+    }));
+  };
+
   const handleSubmit = async () => {
     if (!formData.preformType || !formData.quantityProduced || formData.rawMaterials.length === 0) {
       setError('Preform Type, Quantity Produced, and at least one Raw Material are required');
@@ -112,10 +182,29 @@ export default function PreformProduction() {
         productionDate: new Date(formData.productionDate).toISOString(),
       };
 
+      // Step 1: Record production
       await recordPreformProduction(payload);
-      setSuccess('Preform production recorded successfully!');
-      
-      // Reset form
+
+      // Step 2: Record wastage if wastage details provided
+      if (wastageData.wastageType && wastageData.quantityGenerated) {
+        const wastagePayload = {
+          wastageType: wastageData.wastageType,
+          source: 'Preform',
+          quantityGenerated: Number(wastageData.quantityGenerated),
+          // Type 2 wastage cannot be reused
+          quantityReused: wastageData.wastageType === 'Type 2: Non-reusable / Scrap'
+            ? 0
+            : Number(wastageData.quantityReused) || 0,
+          reuseReference: wastageData.reuseReference || '',
+          remarks: wastageData.remarks || '',
+          date: new Date(formData.productionDate).toISOString(),
+        };
+        await recordWastage(wastagePayload);
+      }
+
+      setSuccess('Production & Wastage Recorded Successfully!');
+
+      // Reset production form
       setFormData({
         rawMaterials: [],
         preformType: '',
@@ -124,7 +213,19 @@ export default function PreformProduction() {
         remarks: '',
         productionDate: new Date().toISOString().split('T')[0],
       });
-      
+
+      // Reset wastage form
+      setWastageData({
+        wastageType: '',
+        quantityGenerated: '',
+        quantityReused: 0,
+        reuseReference: '',
+        remarks: '',
+      });
+
+      // Refresh production list
+      loadProductionList();
+
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
       setError(err.message || 'Failed to record preform production');
@@ -237,7 +338,7 @@ export default function PreformProduction() {
               name="preformType"
               value={formData.preformType}
               onChange={handleInputChange}
-              placeholder="e.g., 500ml, 1L"
+              placeholder="Enter Preform Type (e.g., 28mm 500ml)"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -300,6 +401,90 @@ export default function PreformProduction() {
           </div>
         </div>
 
+        {/* Wastage Details Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4">Wastage Details (Optional)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Wastage Type
+              </label>
+              <select
+                name="wastageType"
+                value={wastageData.wastageType}
+                onChange={handleWastageChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Select Wastage Type --</option>
+                <option value="Type 1: Reusable Wastage">Type 1: Reusable Wastage</option>
+                <option value="Type 2: Non-reusable / Scrap">Type 2: Non-reusable / Scrap</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Quantity Generated
+              </label>
+              <input
+                type="number"
+                name="quantityGenerated"
+                value={wastageData.quantityGenerated}
+                onChange={handleWastageChange}
+                placeholder="0"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity Reused (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    name="quantityReused"
+                    value={wastageData.quantityReused}
+                    onChange={handleWastageChange}
+                    placeholder="0"
+                    min="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reuse Reference (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="reuseReference"
+                    value={wastageData.reuseReference}
+                    onChange={handleWastageChange}
+                    placeholder="Batch number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Wastage Remarks
+              </label>
+              <textarea
+                name="remarks"
+                value={wastageData.remarks}
+                onChange={handleWastageChange}
+                placeholder="Optional wastage remarks"
+                rows="2"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 flex justify-end">
           <Button
             onClick={handleSubmit}
@@ -309,6 +494,56 @@ export default function PreformProduction() {
             {loading ? 'Recording...' : 'Record Preform Production'}
           </Button>
         </div>
+      </div>
+
+      {/* Production List */}
+      <div className="mt-8">
+        <ProductionList
+          title="Preform Production History"
+          data={productionList}
+          loading={listLoading}
+          error={listError}
+          pagination={pagination}
+          columns={[
+            { key: 'outcomeType', label: 'Preform Type' },
+            { key: 'quantityProduced', label: 'Quantity Produced' },
+            { key: 'wastage', label: 'Wastage' },
+            { key: 'usedInBottles', label: 'Used in Bottles' },
+            {
+              key: 'productionDate',
+              label: 'Production Date',
+              render: (row) => new Date(row.productionDate).toLocaleDateString()
+            },
+            {
+              key: 'recordedBy',
+              label: 'Recorded By',
+              render: (row) => row.recordedBy?.name || 'N/A'
+            },
+            {
+              key: 'statistics',
+              label: 'Available',
+              render: (row) => row.statistics?.available || 0
+            }
+          ]}
+          filterOptions={[
+            {
+              key: 'preformType',
+              label: 'Filter by Preform Type',
+              type: 'text',
+            }
+          ]}
+          filters={listFilters}
+          onFilterChange={(key, value) => {
+            const newFilters = { ...listFilters, [key]: value, page: 1 };
+            setListFilters(newFilters);
+            loadProductionList(newFilters);
+          }}
+          onPageChange={(page) => {
+            const newFilters = { ...listFilters, page };
+            setListFilters(newFilters);
+            loadProductionList(newFilters);
+          }}
+        />
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import {
   recordDirectUsage,
   getCurrentStockReport,
-} from "../../services/api/stock";
+} from "../../../services/api/stock";
 
 export default function DirectUsage() {
   const [loading, setLoading] = useState(false);
