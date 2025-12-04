@@ -118,12 +118,12 @@ export default function Wastage() {
         )}
 
         {/* INFO NOTICE */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+        {/* <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-yellow-800">
             <strong>Note:</strong> Wastage records are created automatically during production (Preform, Cap, or Bottle).
             This page allows you to view all wastage records and reuse <strong>Type 1 (Reusable)</strong> wastage only.
           </p>
-        </div>
+        </div> */}
 
         {/* WASTAGE TABLE */}
         <div className="bg-white rounded-lg shadow-lg p-6">
@@ -169,7 +169,8 @@ export default function Wastage() {
                       className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
                       <td className="px-4 py-3 border-b text-sm text-gray-800">
-                        {item.wastageType}
+                        {/* {item.wastageType} */}
+                        Type 1 : Total Wastage
                       </td>
                       <td className="px-4 py-3 border-b text-sm text-gray-600">
                         {item.source}

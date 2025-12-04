@@ -491,8 +491,8 @@ if (res?.success) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- Select Wastage Type --</option>
-                <option value="Type 1: Reusable Wastage">Type 1: Reusable Wastage</option>
-                <option value="Type 2: Non-reusable / Scrap">Type 2: Non-reusable / Scrap</option>
+                <option value="Type 1: Reusable Wastage">Type 1: Total Wastage</option>
+                {/* <option value="Type 2: Non-reusable / Scrap">Type 2: -</option> */}
               </select>
             </div>
 
@@ -511,7 +511,7 @@ if (res?.success) {
               />
             </div>
 
-            {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
+            {/* {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -542,7 +542,7 @@ if (res?.success) {
                   />
                 </div>
               </>
-            )}
+            )} */}
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">

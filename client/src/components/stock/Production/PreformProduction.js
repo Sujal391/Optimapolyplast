@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../ui/button';
 import ProductionList from './ProductionList';
 import {
@@ -27,6 +27,9 @@ export default function PreformProduction() {
     page: 1,
     limit: 10
   });
+
+  // Debounce timer ref
+  const debounceTimer = useRef(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -58,6 +61,15 @@ export default function PreformProduction() {
     fetchMaterials();
     // loadPreformTypes();
     loadProductionList();
+  }, []);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
   }, []);
 
   const fetchMaterials = async () => {
@@ -158,6 +170,22 @@ export default function PreformProduction() {
       // Reset quantityReused to 0 if Type 2 is selected
       ...(name === 'wastageType' && value === 'Type 2: Non-reusable / Scrap' ? { quantityReused: 0 } : {})
     }));
+  };
+
+  // Debounced filter change handler
+  const handleFilterChange = (key, value) => {
+    const newFilters = { ...listFilters, [key]: value, page: 1 };
+    setListFilters(newFilters);
+
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Set new timer for debounced search
+    debounceTimer.current = setTimeout(() => {
+      loadProductionList(newFilters);
+    }, 500);
   };
 
   const handleSubmit = async () => {
@@ -416,8 +444,8 @@ export default function PreformProduction() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">-- Select Wastage Type --</option>
-                <option value="Type 1: Reusable Wastage">Type 1: Reusable Wastage</option>
-                <option value="Type 2: Non-reusable / Scrap">Type 2: Non-reusable / Scrap</option>
+                <option value="Type 1: Reusable Wastage">Type 1: Total Wastage</option>
+                {/* <option value="Type 2: Non-reusable / Scrap">Type 2: -</option> */}
               </select>
             </div>
 
@@ -436,7 +464,7 @@ export default function PreformProduction() {
               />
             </div>
 
-            {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
+            {/* {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -467,7 +495,7 @@ export default function PreformProduction() {
                   />
                 </div>
               </>
-            )}
+            )} */}
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -533,11 +561,7 @@ export default function PreformProduction() {
             }
           ]}
           filters={listFilters}
-          onFilterChange={(key, value) => {
-            const newFilters = { ...listFilters, [key]: value, page: 1 };
-            setListFilters(newFilters);
-            loadProductionList(newFilters);
-          }}
+          onFilterChange={handleFilterChange}
           onPageChange={(page) => {
             const newFilters = { ...listFilters, page };
             setListFilters(newFilters);
