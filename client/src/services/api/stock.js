@@ -73,8 +73,6 @@ export const deleteRawMaterial = async (id) => {
   }
 };
 
-// ============ INWARD ENTRY APIs ============
-
 /**
  * Record an inward entry
  * POST /raw-material/entry
@@ -167,10 +165,23 @@ export const recordProductionOutcome = async (data) => {
   }
 };
 
+// <---------------------------PREFORM PRODUCTION APIs----------------------------------->
+
 /**
- * Record preform production
- * POST /production/preform
- * @param {Object} data - { rawMaterials: [], preformType, quantityProduced, wastage?, remarks?, productionDate? }
+ * Record preform production (UPDATED)
+ * POST /api/stock/production/preform
+ * 
+ * @param {Object} data - {
+ *   rawMaterials: [
+ *     { materialId: string, quantityUsed: number }
+ *   ],
+ *   preformType: string,
+ *   quantityProduced: number,
+ *   wastageType1?: number,   // Reusable wastage
+ *   wastageType2?: number,   // Non-reusable / Scrap wastage
+ *   remarks?: string,
+ *   productionDate?: string (YYYY-MM-DD)
+ * }
  */
 export const recordPreformProduction = async (data) => {
   try {
@@ -182,9 +193,78 @@ export const recordPreformProduction = async (data) => {
 };
 
 /**
- * Record cap production
- * POST /production/cap
- * @param {Object} data - { rawMaterials: [], capType, quantityProduced, boxesUsed?, bagsUsed?, wastage?, remarks?, productionDate? }
+ * Get Preform Productions (with optional reports)
+ * GET /api/stock/production/preform
+ * 
+ * Available Query Params:
+ * preformType?: string
+ * startDate?: string (YYYY-MM-DD)
+ * endDate?: string (YYYY-MM-DD)
+ * period?: 'daily' | 'weekly' | 'monthly'
+ * downloadReport?: boolean
+ * page?: number
+ * limit?: number
+ * sortBy?: string
+ * sortOrder?: 'asc' | 'desc'
+ */
+export const getPreformProductions = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/production/preform', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+
+// <-----------------------CAP MANAGEMENT APIs-------------------->
+
+/**
+ * Add a new cap
+ * POST /api/stock/cap/add
+ * @param {Object} data - { neckType, size, color, quantityAvailable, remarks? }
+ */
+export const addCap = async (data) => {
+  try {
+    const response = await apiClient.post('stock/cap/add', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Get caps with optional filters
+ * GET /api/stock/caps
+ * @param {Object} params - { neckType?, size?, color? }
+ */
+export const getCaps = async (params) => {
+  try {
+    const response = await apiClient.get('stock/caps', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Record cap production (UPDATED)
+ * POST /api/stock/production/cap
+ *
+ * @param {Object} data - {
+ *   rawMaterials: [
+ *     { materialId: string, quantityUsed: number }
+ *   ],
+ *   capType: string,         // e.g., "28mm"
+ *   capColor: string,        // e.g., "black"
+ *   quantityProduced: number,
+ *   boxesUsed?: number,
+ *   bagsUsed?: number,
+ *   wastageType1?: number,   // Reusable wastage
+ *   wastageType2?: number,   // Non-reusable / Scrap wastage
+ *   remarks?: string,
+ *   productionDate?: string  // YYYY-MM-DD
+ * }
  */
 export const recordCapProduction = async (data) => {
   try {
@@ -196,9 +276,109 @@ export const recordCapProduction = async (data) => {
 };
 
 /**
- * Record bottle production
- * POST /production/bottle
- * @param {Object} data - { preformType, boxesProduced, bottlesPerBox, bottleCategory, remarks?, productionDate? }
+ * Update cap stock
+ * PUT /api/stock/cap/:id/stock
+ * @param {String} id - Cap ID
+ * @param {Object} data - { quantityChange, changeType, remarks? }
+ */
+export const updateCapStock = async (id, data) => {
+  try {
+    const response = await apiClient.put(`stock/cap/${id}/stock`, data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Delete cap
+ * DELETE /api/stock/cap/:id
+ * @param {String} id - Cap ID
+ */
+export const deleteCap = async (id) => {
+  try {
+    const response = await apiClient.delete(`stock/cap/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+// <-----------------------------------LABEL PRODUCTION APIs------------------------------------>
+
+/**
+ * Add a new label
+ * POST /api/stock/label/add
+ * @param {Object} data - { bottleCategory, bottleName, quantityAvailable, remarks? }
+ */
+export const addLabel = async (data) => {
+  try {
+    const response = await apiClient.post('stock/label/add', data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Get labels with optional filters
+ * GET /api/stock/labels
+ * @param {Object} params - { bottleCategory? }
+ */
+export const getLabels = async (params) => {
+  try {
+    const response = await apiClient.get('stock/labels', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Update label stock
+ * PUT /api/stock/label/:id/stock
+ * @param {String} id - Label ID
+ * @param {Object} data - { quantityChange, changeType, remarks? }
+ */
+export const updateLabelStock = async (id, data) => {
+  try {
+    const response = await apiClient.put(`stock/label/${id}/stock`, data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Delete label
+ * DELETE /api/stock/label/:id
+ * @param {String} id - Label ID
+ */
+export const deleteLabel = async (id) => {
+  try {
+    const response = await apiClient.delete(`stock/label/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+// <---------------------------------BOTTLE PRODUCTION APIs--------------------------------------->
+
+/**
+ * Record bottle production (UPDATED)
+ * POST /api/stock/production/bottle
+ *
+ * @param {Object} data - {
+ *   preformType: string,
+ *   boxesProduced: number,
+ *   bottlesPerBox: number,
+ *   bottleCategory: string,
+ *   labelId: string,    // required
+ *   capId: string,      // required
+ *   remarks?: string,
+ *   productionDate?: string  // YYYY-MM-DD
+ * }
  */
 export const recordBottleProduction = async (data) => {
   try {
@@ -210,7 +390,7 @@ export const recordBottleProduction = async (data) => {
 };
 
 /**
- * 2. Get Available Preform Types
+ * Get Available Preform Types
  * GET /preforms/available-types
  */
 export const getAvailablePreformTypes = async () => {
@@ -223,7 +403,7 @@ export const getAvailablePreformTypes = async () => {
 };
 
 /**
- * 3. Get Available Preforms (Detailed availability)
+ * Get Available Preforms (Detailed availability)
  * GET /preforms/available?type=
  */
 export const getAvailablePreforms = async (params = {}) => {
@@ -236,7 +416,7 @@ export const getAvailablePreforms = async (params = {}) => {
 };
 
 /**
- * 4. Get Available Caps (Detailed availability)
+ * Get Available Caps (Detailed availability)
  * GET /caps/available?type=
  */
 export const getAvailableCaps = async (params = {}) => {
@@ -249,7 +429,7 @@ export const getAvailableCaps = async (params = {}) => {
 };
 
 /**
- * 5. Get Preform Types (ALL types, for dropdown)
+ * Get Preform Types (ALL types, for dropdown)
  * GET /preforms/types
  */
 export const getPreformTypes = async () => {
@@ -262,7 +442,7 @@ export const getPreformTypes = async () => {
 };
 
 /**
- * 6. Get Cap Types (ALL types, for dropdown)
+ * Get Cap Types (ALL types, for dropdown)
  * GET /caps/types
  */
 export const getCapTypes = async () => {
@@ -275,21 +455,21 @@ export const getCapTypes = async () => {
 };
 
 /**
- * 7. Get Preform Production List (Paginated)
- * GET /production/preform
- */
-export const getPreformProductions = async (params = {}) => {
-  try {
-    const response = await apiClient.get('stock/production/preform', { params });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error;
-  }
-};
-
-/**
- * 8. Get Cap Production List (Paginated)
- * GET /production/cap
+ * Get Cap Productions (with optional reports)
+ * GET /api/stock/production/cap
+ *
+ * @param {Object} params - {
+ *   capType?: string,
+ *   capColor?: string,
+ *   startDate?: string,        // YYYY-MM-DD
+ *   endDate?: string,          // YYYY-MM-DD
+ *   period?: 'daily' | 'weekly' | 'monthly',
+ *   downloadReport?: boolean,
+ *   page?: number,
+ *   limit?: number,
+ *   sortBy?: string,
+ *   sortOrder?: 'asc' | 'desc'
+ * }
  */
 export const getCapProductions = async (params = {}) => {
   try {
@@ -301,7 +481,7 @@ export const getCapProductions = async (params = {}) => {
 };
 
 /**
- * 9. Check Material Availability for Bottle Production
+ * Check Material Availability for Bottle Production
  * GET /production/check-availability
  */
 export const checkMaterialAvailability = async (params) => {
@@ -314,7 +494,7 @@ export const checkMaterialAvailability = async (params) => {
 };
 
 /**
- * 10. Check Bottle Production Availability (explicit capType)
+ * Check Bottle Production Availability (explicit capType)
  * GET /production/check-bottle-availability
  */
 export const checkBottleAvailability = async (params) => {
@@ -327,7 +507,7 @@ export const checkBottleAvailability = async (params) => {
 };
 
 /**
- * 11. Get Production Batches
+ * Get Production Batches
  * GET /production/batches
  */
 export const getProductionBatches = async () => {
@@ -339,6 +519,28 @@ export const getProductionBatches = async () => {
   }
 };
 
+/**
+ * Get Bottle Productions (with filters, pagination, sorting)
+ * GET /api/stock/production/bottle
+ *
+ * @param {Object} params - {
+ *   bottleCategory?: string,
+ *   startDate?: string,      // YYYY-MM-DD
+ *   endDate?: string,        // YYYY-MM-DD
+ *   page?: number,
+ *   limit?: number,
+ *   sortBy?: string,
+ *   sortOrder?: 'asc' | 'desc'
+ * }
+ */
+export const getBottleProductions = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/production/bottle', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
 
 // ============ OUTCOME ITEMS APIs ============
 
@@ -372,9 +574,16 @@ export const fetchOutcomeItems = async () => {
 // ============ WASTAGE MANAGEMENT APIs ============
 
 /**
- * Record wastage
- * POST /wastage
- * @param {Object} data - { wastageType, source, quantityGenerated, quantityReused?, reuseReference?, remarks?, date? }
+ * Record wastage (UPDATED)
+ * POST /api/stock/wastage
+ *
+ * @param {Object} data - {
+ *   source: string,             // e.g., "Preform", "Cap", "Bottle"
+ *   quantityType1?: number,     // Reusable wastage
+ *   quantityType2?: number,     // Scrap / Non-reusable
+ *   remarks?: string,
+ *   date?: string               // YYYY-MM-DD
+ * }
  */
 export const recordWastage = async (data) => {
   try {
@@ -473,6 +682,47 @@ export const getUsageReport = async (params = {}) => {
 };
 
 /**
+ * Get Preform Production Report
+ * GET /api/stock/report/preform-production
+ *
+ * @param {Object} params - {
+ *   period?: 'daily' | 'weekly' | 'monthly',
+ *   startDate?: string,   // YYYY-MM-DD
+ *   endDate?: string      // YYYY-MM-DD
+ * }
+ */
+export const getPreformProductionReport = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/report/preform-production', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Get Cap Production Report
+ * GET /api/stock/report/cap-production
+ *
+ * @param {Object} params - {
+ *   period?: 'daily' | 'weekly' | 'monthly',
+ *   startDate?: string,   // YYYY-MM-DD
+ *   endDate?: string      // YYYY-MM-DD
+ * }
+ */
+export const getCapProductionReport = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/report/cap-production', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+
+// ============ ADMIN FUNCTIONS APIs ============
+
+/**
  * Fetch raw material summary (admin only)
  * GET /admin/raw-material/summary
  * Returns: { success, data: { summary: [...], overall: { totalWastageKg, totalProducedKg } } }
@@ -485,8 +735,6 @@ export const getRawMaterialSummary = async () => {
     throw error.response?.data || error;
   }
 };
-
-// ============ ADMIN FUNCTIONS APIs ============
 
 /**
  * Add new category

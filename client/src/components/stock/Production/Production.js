@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ProductionOutcome from './ProductionOutcome';
+// import ProductionOutcome from './ProductionOutcome';
 import PreformProduction from './PreformProduction';
 import CapProduction from './CapProduction';
 import BottleProduction from './BottleProduction';
@@ -9,7 +9,7 @@ export default function Production() {
   const [activeTab, setActiveTab] = useState(0);
 
   const tabs = [
-    { id: 0, label: 'Production Outcome', component: ProductionOutcome },
+    // { id: 0, label: 'Production Outcome', component: ProductionOutcome },
     { id: 1, label: 'Preform Production', component: PreformProduction },
     { id: 2, label: 'Cap Production', component: CapProduction },
     { id: 3, label: 'Bottle Production', component: BottleProduction },

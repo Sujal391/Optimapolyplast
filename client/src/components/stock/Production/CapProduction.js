@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../ui/button';
+import { Trash2 } from 'lucide-react';
 import ProductionList from './ProductionList';
 import {
   fetchRawMaterials,
   recordCapProduction,
-  getCapTypes,
   getCapProductions,
-  recordWastage
+  getCaps  // ADD THIS IMPORT
 } from '../../../services/api/stock';
-import { Trash2 } from 'lucide-react';
 
-// Available cap colors - Your specific list
+// Available cap colors
 const CAP_COLORS = [
   { name: 'White', hex: '#FFFFFF' },
   { name: 'Yellow', hex: '#FBBF24' },
@@ -26,30 +25,40 @@ const CAP_COLORS = [
 
 export default function CapProduction() {
   const [materials, setMaterials] = useState([]);
+  const [caps, setCaps] = useState([]);  // ADD THIS STATE
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   // Production list state
+  const [allProductionData, setAllProductionData] = useState([]);
   const [productionList, setProductionList] = useState([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState(null);
   const [pagination, setPagination] = useState(null);
+  const [reportSummary, setReportSummary] = useState(null);
   const [listFilters, setListFilters] = useState({
     capType: '',
+    capColor: '',
+    startDate: '',
+    endDate: '',
+    period: '',
     page: 1,
-    limit: 10
+    limit: 10,
+    sortBy: 'productionDate',
+    sortOrder: 'desc'
   });
 
   // Form state
   const [formData, setFormData] = useState({
     rawMaterials: [],
     capType: '',
-    capColor: '', // NEW: Color field
+    capColor: '',
     quantityProduced: '',
     boxesUsed: '',
     bagsUsed: '',
-    wastage: '',
+    wastageType1: '',
+    wastageType2: '',
     remarks: '',
     productionDate: new Date().toISOString().split('T')[0],
   });
@@ -60,22 +69,11 @@ export default function CapProduction() {
     quantityUsed: '',
   });
 
-  // Wastage form state
-  const [wastageData, setWastageData] = useState({
-    wastageType: '',
-    quantityGenerated: '',
-    quantityReused: 0,
-    reuseReference: '',
-    remarks: '',
-  });
-
-  // Debounced search for production list
-  const [searchTimeout, setSearchTimeout] = useState(null);
-
-  // Fetch materials on mount
+  // Fetch materials, caps, and production data on mount
   useEffect(() => {
     fetchMaterials();
-    loadProductionList();
+    fetchCaps();  // ADD THIS CALL
+    fetchAllProductionData();
   }, []);
 
   const fetchMaterials = async () => {
@@ -91,18 +89,24 @@ export default function CapProduction() {
     }
   };
 
-  const loadProductionList = async (filters = listFilters) => {
+  // ADD THIS FUNCTION
+  const fetchCaps = async () => {
+    try {
+      const res = await getCaps();
+      setCaps(res.caps || res.data || []);
+    } catch (err) {
+      console.error('Error fetching caps:', err);
+      // Don't set error state here to avoid disrupting the form
+    }
+  };
+
+  // Fetch all production data once from API
+  const fetchAllProductionData = async () => {
     setListLoading(true);
     setListError(null);
     try {
-      const params = {
-        page: filters.page,
-        limit: filters.limit,
-        ...(filters.capType && { capType: filters.capType })
-      };
-      const res = await getCapProductions(params);
-      setProductionList(res?.data || []);
-      setPagination(res?.pagination || null);
+      const res = await getCapProductions({ limit: 1000 });
+      setAllProductionData(res?.data || []);
     } catch (err) {
       setListError(err.message || 'Failed to load production list');
       console.error('Error loading production list:', err);
@@ -111,29 +115,86 @@ export default function CapProduction() {
     }
   };
 
-  // Debounced search handler
-  const handleDebouncedSearch = useCallback((searchValue) => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
+  // Apply local filtering, sorting, and pagination
+  const applyLocalFilters = (data, filters) => {
+    let filtered = [...data];
+
+    if (filters.capType) {
+      filtered = filtered.filter(item =>
+        item.capType?.toLowerCase().includes(filters.capType.toLowerCase())
+      );
     }
 
-    const timeout = setTimeout(() => {
-      const newFilters = { ...listFilters, capType: searchValue, page: 1 };
-      setListFilters(newFilters);
-      loadProductionList(newFilters);
-    }, 500);
+    if (filters.capColor) {
+      filtered = filtered.filter(item =>
+        item.capColor?.toLowerCase().includes(filters.capColor.toLowerCase())
+      );
+    }
 
-    setSearchTimeout(timeout);
-  }, [listFilters]);
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      filtered = filtered.filter(item => new Date(item.productionDate) >= startDate);
+    }
+    if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(item => new Date(item.productionDate) <= endDate);
+    }
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeout) {
-        clearTimeout(searchTimeout);
+    const sortBy = filters.sortBy || 'productionDate';
+    const sortOrder = filters.sortOrder || 'desc';
+    filtered.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      if (sortBy === 'productionDate') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
       }
-    };
-  }, [searchTimeout]);
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      aVal = String(aVal || '').toLowerCase();
+      bVal = String(bVal || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+
+    const totalRecords = filtered.length;
+    const totalPages = Math.ceil(totalRecords / filters.limit) || 1;
+    const currentPage = Math.min(filters.page, totalPages);
+    const startIndex = (currentPage - 1) * filters.limit;
+    const paginatedData = filtered.slice(startIndex, startIndex + filters.limit);
+
+    setPagination({
+      currentPage,
+      totalPages,
+      totalRecords,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    });
+
+    setProductionList(paginatedData);
+  };
+
+  useEffect(() => {
+    if (allProductionData.length > 0) {
+      applyLocalFilters(allProductionData, listFilters);
+    }
+  }, [allProductionData, listFilters]);
+
+  const handleFilterChange = (key, value) => {
+    setListFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
+
+  const handlePageChange = (page) => {
+    setListFilters(prev => ({ ...prev, page }));
+  };
+
+  const handleSortChange = (sortBy, sortOrder) => {
+    setListFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -143,13 +204,12 @@ export default function CapProduction() {
     }));
   };
 
-  // NEW: Color selection handler
   const handleColorSelect = (colorName) => {
     setFormData(prev => ({
       ...prev,
       capColor: colorName
     }));
-    setError(''); // Clear any errors when color is selected
+    setError('');
   };
 
   const handleMaterialInputChange = (e) => {
@@ -191,22 +251,14 @@ export default function CapProduction() {
     }));
   };
 
-  // Wastage input handler
-  const handleWastageChange = (e) => {
-    const { name, value } = e.target;
-    setWastageData(prev => ({
-      ...prev,
-      [name]: value,
-      // Reset quantityReused to 0 if Type 2 is selected
-      ...(name === 'wastageType' && value === 'Type 2: Non-reusable / Scrap' ? { quantityReused: 0 } : {})
-    }));
-  };
-
   const handleSubmit = async () => {
     if (!formData.capType || !formData.capColor || !formData.quantityProduced || formData.rawMaterials.length === 0) {
       setError('Cap Type, Cap Color, Quantity Produced, and at least one Raw Material are required');
       return;
     }
+
+    const hasWastageType1 = formData.wastageType1 && parseFloat(formData.wastageType1) > 0;
+    const hasWastageType2 = formData.wastageType2 && parseFloat(formData.wastageType2) > 0;
 
     try {
       setLoading(true);
@@ -218,61 +270,39 @@ export default function CapProduction() {
           quantityUsed: m.quantityUsed,
         })),
         capType: formData.capType,
-        capColor: formData.capColor, // NEW: Include color in payload
+        capColor: formData.capColor,
         quantityProduced: parseInt(formData.quantityProduced, 10),
         boxesUsed: formData.boxesUsed ? parseInt(formData.boxesUsed, 10) : 0,
         bagsUsed: formData.bagsUsed ? parseInt(formData.bagsUsed, 10) : 0,
-        wastage: formData.wastage ? parseInt(formData.wastage, 10) : 0,
         remarks: formData.remarks,
         productionDate: new Date(formData.productionDate).toISOString(),
       };
 
-      // Step 1: Record production
-      await recordCapProduction(payload);
-
-      // Step 2: Record wastage if wastage details provided
-      if (wastageData.wastageType && wastageData.quantityGenerated) {
-        const wastagePayload = {
-          wastageType: wastageData.wastageType,
-          source: 'Cap',
-          quantityGenerated: Number(wastageData.quantityGenerated),
-          // Type 2 wastage cannot be reused
-          quantityReused: wastageData.wastageType === 'Type 2: Non-reusable / Scrap'
-            ? 0
-            : Number(wastageData.quantityReused) || 0,
-          reuseReference: wastageData.reuseReference || '',
-          remarks: wastageData.remarks || '',
-          date: new Date(formData.productionDate).toISOString(),
-        };
-        await recordWastage(wastagePayload);
+      if (hasWastageType1) {
+        payload.wastageType1 = parseFloat(formData.wastageType1);
       }
+      if (hasWastageType2) {
+        payload.wastageType2 = parseFloat(formData.wastageType2);
+      }
+
+      await recordCapProduction(payload);
 
       setSuccess('Production & Wastage Recorded Successfully!');
 
-      // Reset production form
       setFormData({
         rawMaterials: [],
         capType: '',
-        capColor: '', // NEW: Reset color
+        capColor: '',
         quantityProduced: '',
         boxesUsed: '',
         bagsUsed: '',
-        wastage: '',
+        wastageType1: '',
+        wastageType2: '',
         remarks: '',
         productionDate: new Date().toISOString().split('T')[0],
       });
 
-      // Reset wastage form
-      setWastageData({
-        wastageType: '',
-        quantityGenerated: '',
-        quantityReused: 0,
-        reuseReference: '',
-        remarks: '',
-      });
-
-      // Refresh production list
-      loadProductionList();
+      fetchAllProductionData();
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -282,23 +312,49 @@ export default function CapProduction() {
     }
   };
 
+  const totalWastage = () => {
+    const type1 = parseFloat(formData.wastageType1) || 0;
+    const type2 = parseFloat(formData.wastageType2) || 0;
+    return type1 + type2;
+  };
+
+  // ADD THIS HELPER FUNCTION to generate unique cap options
+  const getUniqueCapTypes = () => {
+    const uniqueTypes = new Map();
+    
+    caps.forEach(cap => {
+      // Create a unique key combining neckType and size
+      const key = `${cap.neckType || ''}-${cap.size || ''}`;
+      const label = cap.size 
+        ? `${cap.size}${cap.neckType ? ` (${cap.neckType})` : ''}`
+        : cap.neckType || 'Unknown';
+      
+      if (!uniqueTypes.has(key)) {
+        uniqueTypes.set(key, {
+          value: cap.size || cap.neckType || '',
+          label: label,
+          cap: cap
+        });
+      }
+    });
+    
+    return Array.from(uniqueTypes.values());
+  };
+
   return (
-    <div>
-      {/* Success Message */}
+    <div className="max-w-7xl mx-auto p-6">
       {success && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
           {success}
         </div>
       )}
 
-      {/* Error Message */}
       {error && (
         <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
-      {/* Form Section */}
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">Record Cap Production</h3>
 
@@ -352,7 +408,6 @@ export default function CapProduction() {
             </div>
           </div>
 
-          {/* Added Materials List */}
           {formData.rawMaterials.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-3">
               <h5 className="font-semibold text-gray-700 mb-2">Added Materials:</h5>
@@ -377,21 +432,27 @@ export default function CapProduction() {
 
         {/* Production Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* REPLACE THE CAP TYPE INPUT WITH THIS SELECT DROPDOWN */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cap Type *
             </label>
-            <input
-              type="text"
+            <select
               name="capType"
               value={formData.capType}
               onChange={handleInputChange}
-              placeholder="e.g., 28mm, 38mm, 48mm"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">-- Select Cap Type --</option>
+              {getUniqueCapTypes().map((capOption, index) => (
+                <option key={index} value={capOption.value}>
+                  {capOption.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* NEW: Cap Color Selector */}
+          {/* Cap Color Selector */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cap Color *
@@ -416,7 +477,6 @@ export default function CapProduction() {
                     cursor: 'pointer'
                   }}
                 >
-                  {/* Checkmark for selected color */}
                   {formData.capColor === color.name && (
                     <svg
                       className="absolute inset-0 m-auto"
@@ -433,8 +493,7 @@ export default function CapProduction() {
                     </svg>
                   )}
                   
-                  {/* Tooltip */}
-                  <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                  <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                     {color.name}
                   </span>
                 </button>
@@ -494,21 +553,6 @@ export default function CapProduction() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Wastage
-            </label>
-            <input
-              type="number"
-              name="wastage"
-              value={formData.wastage}
-              onChange={handleInputChange}
-              placeholder="0"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Production Date
             </label>
             <input
@@ -538,92 +582,64 @@ export default function CapProduction() {
         {/* Wastage Details Section */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Wastage Details (Optional)</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Enter wastage quantities by type. It will automatically create separate wastage records for each type.
+          </p>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wastage Type
+                Type 1: Reusable Wastage
               </label>
-              <select
-                name="wastageType"
-                value={wastageData.wastageType}
-                onChange={handleWastageChange}
+              <input
+                type="number"
+                name="wastageType1"
+                value={formData.wastageType1}
+                onChange={handleInputChange}
+                placeholder="0"
+                min="0"
+                step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select Wastage Type --</option>
-                <option value="Type 1: Reusable Wastage">Type 1: Total Wastage</option>
-                {/* <option value="Type 2: Non-reusable / Scrap">Type 2: -</option> */}
-              </select>
+              />
+              <p className="mt-1 text-xs text-gray-500">Wastage that can be reused</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity Generated
+                Type 2: Non-reusable / Scrap
               </label>
               <input
                 type="number"
-                name="quantityGenerated"
-                value={wastageData.quantityGenerated}
-                onChange={handleWastageChange}
+                name="wastageType2"
+                value={formData.wastageType2}
+                onChange={handleInputChange}
                 placeholder="0"
                 min="0"
+                step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
-
-            {/* {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity Reused (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantityReused"
-                    value={wastageData.quantityReused}
-                    onChange={handleWastageChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reuse Reference (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="reuseReference"
-                    value={wastageData.reuseReference}
-                    onChange={handleWastageChange}
-                    placeholder="Batch number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </>
-            )} */}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wastage Remarks
-              </label>
-              <textarea
-                name="remarks"
-                value={wastageData.remarks}
-                onChange={handleWastageChange}
-                placeholder="Optional wastage remarks"
-                rows="2"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <p className="mt-1 text-xs text-gray-500">Wastage that cannot be reused (scrap)</p>
             </div>
           </div>
+
+          {(formData.wastageType1 || formData.wastageType2) && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Total Wastage:</span>
+                <span className="text-lg font-semibold text-blue-700">{totalWastage()} units</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                It will automatically create separate wastage records for each type
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end">
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
           >
             {loading ? 'Recording...' : 'Record Cap Production'}
           </Button>
@@ -639,46 +655,34 @@ export default function CapProduction() {
           error={listError}
           pagination={pagination}
           columns={[
-            { key: 'capType', label: 'Cap Type' },
-            { key: 'quantityProduced', label: 'Quantity Produced' },
-            { key: 'wastage', label: 'Wastage' },
-            { key: 'usedInBottles', label: 'Used in Bottles' },
-            {
-              key: 'productionDate',
-              label: 'Production Date',
-              render: (row) => new Date(row.productionDate).toLocaleDateString()
-            },
-            {
-              key: 'recordedBy',
-              label: 'Recorded By',
-              render: (row) => row.recordedBy?.name || 'N/A'
-            },
-            {
-              key: 'statistics',
-              label: 'Available',
-              render: (row) => row.statistics?.available || 0
-            }
+            { key: 'capType', label: 'Cap Type', render: (row) => row.capType || 'N/A' },
+            { key: 'capColor', label: 'Color', render: (row) => row.capColor || 'N/A' },
+            { key: 'quantityProduced', label: 'Quantity Produced', render: (row) => row.quantityProduced || 0 },
+            { key: 'wastageType1', label: 'Reusable Wastage', render: (row) => row.wastageType1 || 0 },
+            { key: 'wastageType2', label: 'Scrap Wastage', render: (row) => row.wastageType2 || 0 },
+            { key: 'productionDate', label: 'Production Date', render: (row) => new Date(row.productionDate).toLocaleDateString() },
+            { key: 'recordedBy', label: 'Recorded By', render: (row) => row.recordedBy?.name || 'N/A' }
           ]}
           filterOptions={[
+            { key: 'capType', label: 'Cap Type', type: 'text', placeholder: 'Enter cap type...' },
             {
-              key: 'capType',
-              label: 'Search by Cap Type',
-              type: 'text',
-              placeholder: 'Search cap type...'
+              key: 'capColor',
+              label: 'Cap Color',
+              type: 'select',
+              options: CAP_COLORS.map(c => ({ value: c.name, label: c.name }))
             }
           ]}
           filters={listFilters}
-          onFilterChange={(key, value) => {
-            // Update the local filter state immediately for UI responsiveness
-            setListFilters(prev => ({ ...prev, [key]: value }));
-            // Trigger debounced search
-            handleDebouncedSearch(value);
-          }}
-          onPageChange={(page) => {
-            const newFilters = { ...listFilters, page };
-            setListFilters(newFilters);
-            loadProductionList(newFilters);
-          }}
+          onFilterChange={handleFilterChange}
+          onPageChange={handlePageChange}
+          onSortChange={handleSortChange}
+          sortBy={listFilters.sortBy}
+          sortOrder={listFilters.sortOrder}
+          sortableColumns={['capType', 'capColor', 'quantityProduced', 'productionDate', 'wastageType1', 'wastageType2']}
+          showDateFilters={true}
+          showPeriodFilter={true}
+          showReportButton={true}
+          reportSummary={reportSummary}
         />
       </div>
     </div>

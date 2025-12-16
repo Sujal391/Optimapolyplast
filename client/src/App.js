@@ -34,6 +34,7 @@ import PendingOrder from './components/reception/PendingOrder';
 import CreateOrder from './components/reception/CreateOrder';
 import TotalOrder from './components/reception/TotalOrder';
 import ReceptionPendingPayment from './components/reception/PendingPayment';
+import ReceptionPartialPayment from './components/reception/PartialPayment';
 
 // Dispatch Panel Components
 import DispatchDashboard from './components/dispatch/Dashboard';
@@ -49,7 +50,8 @@ import StockAttendance from './components/stock/Attendance';
 import StockList from './components/admin/StockList';
 import AddStock from './components/stock/Stock';
 import RawMaterial from './components/stock/RawMaterial';
-import Inward from './components/stock/Inward/Inward';
+import Labels from './components/stock/Labels';
+import Caps from './components/stock/Caps';
 import Production from './components/stock/Production/Production';
 import Outcome from './components/stock/Outcome';
 import Wastage from './components/stock/Wastage';
@@ -219,6 +221,14 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
+        <Route path="/reception/partial-payments" element={
+          <PrivateRoute allowedRoles={['reception']}>
+            <AuthLayout>
+              <ReceptionDashboard />
+              <ReceptionPartialPayment />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
 
         {/* Stock Panel Routes */}
         <Route path="/stock/dashboard" element={
@@ -260,11 +270,19 @@ function App() {
             </AuthLayout>
           </PrivateRoute>
         }/>
-        <Route path="/stock/inward-entries" element={
+        <Route path="/stock/labels" element={
           <PrivateRoute allowedRoles={['stock']}>
             <AuthLayout>
               <StockDashboard />
-              <Inward />
+              <Labels />
+            </AuthLayout>
+          </PrivateRoute>
+        }/>
+        <Route path="/stock/caps" element={
+          <PrivateRoute allowedRoles={['stock']}>
+            <AuthLayout>
+              <StockDashboard />
+              <Caps />
             </AuthLayout>
           </PrivateRoute>
         }/>

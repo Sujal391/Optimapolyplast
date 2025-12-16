@@ -149,7 +149,7 @@ const DispatchComponent = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-3xl font-semibold mb-4 text-green-600">Order History</h2>
+        <h2 className="text-3xl font-semibold mb-4 text-green-600">Dispatch History</h2>
         {orderHistory.length > 0 ? (
           <table className="w-full border-collapse">
             <thead>

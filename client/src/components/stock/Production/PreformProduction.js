@@ -1,42 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../../ui/button';
 import ProductionList from './ProductionList';
 import {
   fetchRawMaterials,
   recordPreformProduction,
-  // getPreformTypes,
-  getPreformProductions,
-  recordWastage
+  getPreformProductions
 } from '../../../services/api/stock';
 import { Trash2 } from 'lucide-react';
 
 export default function PreformProduction() {
   const [materials, setMaterials] = useState([]);
-  // const [preformTypes, setPreformTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   // Production list state
-  const [productionList, setProductionList] = useState([]);
+  const [allProductionData, setAllProductionData] = useState([]); // Full dataset
+  const [productionList, setProductionList] = useState([]); // Filtered/paginated data
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState(null);
   const [pagination, setPagination] = useState(null);
+  const [reportSummary, setReportSummary] = useState(null);
   const [listFilters, setListFilters] = useState({
     preformType: '',
+    startDate: '',
+    endDate: '',
+    period: '',
     page: 1,
-    limit: 10
+    limit: 10,
+    sortBy: 'productionDate',
+    sortOrder: 'desc'
   });
-
-  // Debounce timer ref
-  const debounceTimer = useRef(null);
 
   // Form state
   const [formData, setFormData] = useState({
     rawMaterials: [],
     preformType: '',
     quantityProduced: '',
-    wastage: '',
+    wastageType1: '',
+    wastageType2: '',
     remarks: '',
     productionDate: new Date().toISOString().split('T')[0],
   });
@@ -47,29 +49,10 @@ export default function PreformProduction() {
     quantityUsed: '',
   });
 
-  // Wastage form state
-  const [wastageData, setWastageData] = useState({
-    wastageType: '',
-    quantityGenerated: '',
-    quantityReused: 0,
-    reuseReference: '',
-    remarks: '',
-  });
-
-  // Fetch materials and preform types on mount
+  // Fetch materials and production data on mount
   useEffect(() => {
     fetchMaterials();
-    // loadPreformTypes();
-    loadProductionList();
-  }, []);
-
-  // Cleanup debounce timer on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-    };
+    fetchAllProductionData();
   }, []);
 
   const fetchMaterials = async () => {
@@ -85,27 +68,14 @@ export default function PreformProduction() {
     }
   };
 
-  // const loadPreformTypes = async () => {
-  //   try {
-  //     const res = await getPreformTypes();
-  //     setPreformTypes(res?.data || []);
-  //   } catch (err) {
-  //     console.error('Error loading preform types:', err);
-  //   }
-  // };
-
-  const loadProductionList = async (filters = listFilters) => {
+  // Fetch all production data once from API
+  const fetchAllProductionData = async () => {
     setListLoading(true);
     setListError(null);
     try {
-      const params = {
-        page: filters.page,
-        limit: filters.limit,
-        ...(filters.preformType && { preformType: filters.preformType })
-      };
-      const res = await getPreformProductions(params);
-      setProductionList(res?.data || []);
-      setPagination(res?.pagination || null);
+      // Fetch all data without pagination for local filtering
+      const res = await getPreformProductions({ limit: 1000 });
+      setAllProductionData(res?.data || []);
     } catch (err) {
       setListError(err.message || 'Failed to load production list');
       console.error('Error loading production list:', err);
@@ -113,6 +83,100 @@ export default function PreformProduction() {
       setListLoading(false);
     }
   };
+
+  // Apply local filtering, sorting, and pagination
+  const applyLocalFilters = (data, filters) => {
+    let filtered = [...data];
+
+    // Filter by preformType
+    if (filters.preformType) {
+      filtered = filtered.filter(item =>
+        item.preformType?.toLowerCase().includes(filters.preformType.toLowerCase())
+      );
+    }
+
+    // Filter by date range
+    if (filters.startDate) {
+      const startDate = new Date(filters.startDate);
+      filtered = filtered.filter(item => new Date(item.productionDate) >= startDate);
+    }
+    if (filters.endDate) {
+      const endDate = new Date(filters.endDate);
+      endDate.setHours(23, 59, 59, 999); // Include the entire end day
+      filtered = filtered.filter(item => new Date(item.productionDate) <= endDate);
+    }
+
+    // Sort
+    const sortBy = filters.sortBy || 'productionDate';
+    const sortOrder = filters.sortOrder || 'desc';
+    filtered.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+
+      // Handle date sorting
+      if (sortBy === 'productionDate') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      }
+
+      // Handle numeric sorting
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // Handle string sorting
+      aVal = String(aVal || '').toLowerCase();
+      bVal = String(bVal || '').toLowerCase();
+      return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+
+    // Calculate pagination
+    const totalRecords = filtered.length;
+    const totalPages = Math.ceil(totalRecords / filters.limit) || 1;
+    const currentPage = Math.min(filters.page, totalPages);
+    const startIndex = (currentPage - 1) * filters.limit;
+    const paginatedData = filtered.slice(startIndex, startIndex + filters.limit);
+
+    setPagination({
+      currentPage,
+      totalPages,
+      totalRecords,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    });
+
+    setProductionList(paginatedData);
+  };
+
+  // Effect to apply filters when data or filters change
+  useEffect(() => {
+    if (allProductionData.length > 0) {
+      applyLocalFilters(allProductionData, listFilters);
+    }
+  }, [allProductionData, listFilters]);
+
+  // Generate report with API call (requires server-side aggregation)
+  // const generateReport = async (filters) => {
+  //   setListLoading(true);
+  //   setReportSummary(null);
+  //   try {
+  //     const params = {
+  //       ...(filters.preformType && { preformType: filters.preformType }),
+  //       ...(filters.startDate && { startDate: filters.startDate }),
+  //       ...(filters.endDate && { endDate: filters.endDate }),
+  //       ...(filters.period && { period: filters.period }),
+  //       downloadReport: true
+  //     };
+  //     const res = await getPreformProductions(params);
+  //     if (res?.summary) {
+  //       setReportSummary(res.summary);
+  //     }
+  //   } catch (err) {
+  //     console.error('Error generating report:', err);
+  //   } finally {
+  //     setListLoading(false);
+  //   }
+  // };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -161,38 +225,34 @@ export default function PreformProduction() {
     }));
   };
 
-  // Wastage input handler
-  const handleWastageChange = (e) => {
-    const { name, value } = e.target;
-    setWastageData(prev => ({
-      ...prev,
-      [name]: value,
-      // Reset quantityReused to 0 if Type 2 is selected
-      ...(name === 'wastageType' && value === 'Type 2: Non-reusable / Scrap' ? { quantityReused: 0 } : {})
-    }));
-  };
-
-  // Debounced filter change handler
+  // Local filter change - no API call, just update state
   const handleFilterChange = (key, value) => {
-    const newFilters = { ...listFilters, [key]: value, page: 1 };
-    setListFilters(newFilters);
-
-    // Clear existing timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    // Set new timer for debounced search
-    debounceTimer.current = setTimeout(() => {
-      loadProductionList(newFilters);
-    }, 500);
+    setListFilters(prev => ({ ...prev, [key]: value, page: 1 }));
   };
+
+  // Local page change - no API call
+  const handlePageChange = (page) => {
+    setListFilters(prev => ({ ...prev, page }));
+  };
+
+  // Local sort change - no API call
+  const handleSortChange = (sortBy, sortOrder) => {
+    setListFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
+  };
+
+  // Generate report - requires API call for server-side aggregation
+  // const handleGenerateReport = () => {
+  //   generateReport(listFilters);
+  // };
 
   const handleSubmit = async () => {
     if (!formData.preformType || !formData.quantityProduced || formData.rawMaterials.length === 0) {
       setError('Preform Type, Quantity Produced, and at least one Raw Material are required');
       return;
     }
+
+    const hasWastageType1 = formData.wastageType1 && parseFloat(formData.wastageType1) > 0;
+    const hasWastageType2 = formData.wastageType2 && parseFloat(formData.wastageType2) > 0;
 
     try {
       setLoading(true);
@@ -205,54 +265,27 @@ export default function PreformProduction() {
         })),
         preformType: formData.preformType,
         quantityProduced: parseInt(formData.quantityProduced, 10),
-        wastage: formData.wastage ? parseInt(formData.wastage, 10) : 0,
+        wastageType1: hasWastageType1 ? parseFloat(formData.wastageType1) : 0,
+        wastageType2: hasWastageType2 ? parseFloat(formData.wastageType2) : 0,
         remarks: formData.remarks,
         productionDate: new Date(formData.productionDate).toISOString(),
       };
 
-      // Step 1: Record production
       await recordPreformProduction(payload);
 
-      // Step 2: Record wastage if wastage details provided
-      if (wastageData.wastageType && wastageData.quantityGenerated) {
-        const wastagePayload = {
-          wastageType: wastageData.wastageType,
-          source: 'Preform',
-          quantityGenerated: Number(wastageData.quantityGenerated),
-          // Type 2 wastage cannot be reused
-          quantityReused: wastageData.wastageType === 'Type 2: Non-reusable / Scrap'
-            ? 0
-            : Number(wastageData.quantityReused) || 0,
-          reuseReference: wastageData.reuseReference || '',
-          remarks: wastageData.remarks || '',
-          date: new Date(formData.productionDate).toISOString(),
-        };
-        await recordWastage(wastagePayload);
-      }
+      setSuccess('Production Recorded Successfully!');
 
-      setSuccess('Production & Wastage Recorded Successfully!');
-
-      // Reset production form
       setFormData({
         rawMaterials: [],
         preformType: '',
         quantityProduced: '',
-        wastage: '',
+        wastageType1: '',
+        wastageType2: '',
         remarks: '',
         productionDate: new Date().toISOString().split('T')[0],
       });
 
-      // Reset wastage form
-      setWastageData({
-        wastageType: '',
-        quantityGenerated: '',
-        quantityReused: 0,
-        reuseReference: '',
-        remarks: '',
-      });
-
-      // Refresh production list
-      loadProductionList();
+      fetchAllProductionData(); // Refresh data after successful submission
 
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -262,23 +295,85 @@ export default function PreformProduction() {
     }
   };
 
+  const totalWastage = () => {
+    const type1 = parseFloat(formData.wastageType1) || 0;
+    const type2 = parseFloat(formData.wastageType2) || 0;
+    return type1 + type2;
+  };
+
+  // Column configuration for ProductionList
+  const columns = [
+    { 
+      key: 'preformType', 
+      label: 'Preform Type',
+      render: (row) => row.outcomeType || row.preformType || 'N/A'
+    },
+    { 
+      key: 'quantityProduced', 
+      label: 'Quantity Produced',
+      render: (row) => row.quantityProduced || 0
+    },
+    { 
+      key: 'wastage', 
+      label: 'Total Wastage',
+      render: (row) => row.wastageKg || 0
+    },
+    { 
+      key: 'wastageType1', 
+      label: 'Reusable Wastage',
+      render: (row) => row.wastageType1 || 0
+    },
+    { 
+      key: 'wastageType2', 
+      label: 'Scrap Wastage',
+      render: (row) => row.wastageType2 || 0
+    },
+    { 
+      key: 'usedInBottles', 
+      label: 'Used in Bottles',
+      render: (row) => row.usedInBottles || 0
+    },
+    {
+      key: 'productionDate',
+      label: 'Production Date',
+      render: (row) => new Date(row.productionDate).toLocaleDateString()
+    },
+    {
+      key: 'recordedBy',
+      label: 'Recorded By',
+      render: (row) => row.recordedBy?.name || 'N/A'
+    },
+    {
+      key: 'available',
+      label: 'Available',
+      render: (row) => row.statistics?.available || 0
+    }
+  ];
+
+  // Filter options for ProductionList
+  const filterOptions = [
+    {
+      key: 'preformType',
+      label: 'Filter by Preform Type',
+      type: 'text',
+      placeholder: 'Enter preform type...'
+    }
+  ];
+
   return (
     <div>
-      {/* Success Message */}
       {success && (
         <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
           {success}
         </div>
       )}
 
-      {/* Error Message */}
       {error && (
         <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
           {error}
         </div>
       )}
 
-      {/* Form Section */}
       <div className="bg-white rounded-lg shadow-lg p-6">
         <h3 className="text-xl font-semibold text-gray-800 mb-4">Record Preform Production</h3>
 
@@ -332,7 +427,6 @@ export default function PreformProduction() {
             </div>
           </div>
 
-          {/* Added Materials List */}
           {formData.rawMaterials.length > 0 && (
             <div className="bg-gray-50 rounded-lg p-3">
               <h5 className="font-semibold text-gray-700 mb-2">Added Materials:</h5>
@@ -388,21 +482,6 @@ export default function PreformProduction() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Wastage
-            </label>
-            <input
-              type="number"
-              name="wastage"
-              value={formData.wastage}
-              onChange={handleInputChange}
-              placeholder="0"
-              min="0"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Production Date
             </label>
             <input
@@ -413,8 +492,54 @@ export default function PreformProduction() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          <div className="md:col-span-2">
+        {/* Wastage Details Section */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h4 className="text-lg font-semibold text-gray-800 mb-4">Wastage Details</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Wastage Type 1 (Reusable)
+              </label>
+              <input
+                type="number"
+                name="wastageType1"
+                value={formData.wastageType1}
+                onChange={handleInputChange}
+                placeholder="0"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Wastage Type 2 (Non-reusable/Scrap)
+              </label>
+              <input
+                type="number"
+                name="wastageType2"
+                value={formData.wastageType2}
+                onChange={handleInputChange}
+                placeholder="0"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {totalWastage() > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">Total Wastage:</span> {totalWastage()} units
+              </p>
+            </div>
+          )}
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Remarks
             </label>
@@ -426,90 +551,6 @@ export default function PreformProduction() {
               rows="3"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-        </div>
-
-        {/* Wastage Details Section */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="text-lg font-semibold text-gray-800 mb-4">Wastage Details (Optional)</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wastage Type
-              </label>
-              <select
-                name="wastageType"
-                value={wastageData.wastageType}
-                onChange={handleWastageChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Select Wastage Type --</option>
-                <option value="Type 1: Reusable Wastage">Type 1: Total Wastage</option>
-                {/* <option value="Type 2: Non-reusable / Scrap">Type 2: -</option> */}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quantity Generated
-              </label>
-              <input
-                type="number"
-                name="quantityGenerated"
-                value={wastageData.quantityGenerated}
-                onChange={handleWastageChange}
-                placeholder="0"
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* {wastageData.wastageType === 'Type 1: Reusable Wastage' && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity Reused (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantityReused"
-                    value={wastageData.quantityReused}
-                    onChange={handleWastageChange}
-                    placeholder="0"
-                    min="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reuse Reference (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    name="reuseReference"
-                    value={wastageData.reuseReference}
-                    onChange={handleWastageChange}
-                    placeholder="Batch number"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </>
-            )} */}
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wastage Remarks
-              </label>
-              <textarea
-                name="remarks"
-                value={wastageData.remarks}
-                onChange={handleWastageChange}
-                placeholder="Optional wastage remarks"
-                rows="2"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
           </div>
         </div>
 
@@ -532,41 +573,20 @@ export default function PreformProduction() {
           loading={listLoading}
           error={listError}
           pagination={pagination}
-          columns={[
-            { key: 'outcomeType', label: 'Preform Type' },
-            { key: 'quantityProduced', label: 'Quantity Produced' },
-            { key: 'wastage', label: 'Wastage' },
-            { key: 'usedInBottles', label: 'Used in Bottles' },
-            {
-              key: 'productionDate',
-              label: 'Production Date',
-              render: (row) => new Date(row.productionDate).toLocaleDateString()
-            },
-            {
-              key: 'recordedBy',
-              label: 'Recorded By',
-              render: (row) => row.recordedBy?.name || 'N/A'
-            },
-            {
-              key: 'statistics',
-              label: 'Available',
-              render: (row) => row.statistics?.available || 0
-            }
-          ]}
-          filterOptions={[
-            {
-              key: 'preformType',
-              label: 'Filter by Preform Type',
-              type: 'text',
-            }
-          ]}
+          columns={columns}
+          filterOptions={filterOptions}
           filters={listFilters}
           onFilterChange={handleFilterChange}
-          onPageChange={(page) => {
-            const newFilters = { ...listFilters, page };
-            setListFilters(newFilters);
-            loadProductionList(newFilters);
-          }}
+          onPageChange={handlePageChange}
+          onSortChange={handleSortChange}
+          // onGenerateReport={handleGenerateReport}
+          sortBy={listFilters.sortBy}
+          sortOrder={listFilters.sortOrder}
+          sortableColumns={['preformType', 'quantityProduced', 'productionDate', 'wastageType1', 'wastageType2']}
+          showDateFilters={true}
+          showPeriodFilter={true}
+          showReportButton={true}
+          reportSummary={reportSummary}
         />
       </div>
     </div>

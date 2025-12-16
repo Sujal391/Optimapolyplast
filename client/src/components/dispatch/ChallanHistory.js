@@ -114,72 +114,93 @@ const DispatchComponent = () => {
   };
 
   const getChallanHTML = (challan) => {
-    const subtotal = challan.items.reduce((acc, item) => acc + item.amount, 0);
-    const gstRate = 0.05; // 5% GST
-    const gstAmount = subtotal * gstRate;
-    const deliveryCharge = challan.deliveryCharge || 0;
-    const totalAmount = subtotal + gstAmount + deliveryCharge;
+  const subtotal = challan.items.reduce((acc, item) => acc + item.amount, 0);
+  const gstRate = 0.05; 
+  const gstAmount = subtotal * gstRate;
+  const deliveryCharge = challan.deliveryCharge || 0;
+  const totalAmount = subtotal + gstAmount + deliveryCharge;
 
-    return `
-      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
-        <div style="text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 15px;">
-          <img src="${logo}" alt="Optima Polyplast LLP Logo" style="width: 120px; height: auto; margin-bottom: 10px;">
-          <h1 style="font-size: 24px; font-weight: bold; color: #333; margin: 5px 0;">OPTIMA POLYPLAST LLP</h1>
-          <p style="font-size: 12px; color: #666; margin: 2px 0;">Plot No. 12, 296, Industrial Road, Near Umiya Battery</p>
-          <p style="font-size: 12px; color: #666; margin: 2px 0;">Mota Jalundra Industrial Zone, Derojnagar, Gandhinagar, Gujarat</p>
-          <p style="font-size: 12px; color: #666; margin: 2px 0;">Phone: +91 9274658587 | Email: info@optimapoliplast.com</p>
-          <p style="font-size: 10px; color: #999; margin: 2px 0;">ISO 9001:2015 Certified Company</p>
-        </div>
+  return `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 850px; margin: 0 auto;">
 
-        <div style="margin-top: 20px; font-size: 12px;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <p><strong>Challan No:</strong> ${challan.invoiceNo}</p>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>User Code:</strong> ${challan.userCode}</p>
-            <p><strong>Receiver:</strong> ${challan.receiverName}</p>
-            <p><strong>Vehicle No:</strong> ${challan.vehicleNo}</p>
-            <p><strong>Mobile:</strong> ${challan.mobileNo}</p>
-            <p><strong>Driver:</strong> ${challan.driverName}</p>
-          </div>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px;">
-          <thead>
-            <tr style="background: #f0f9ff;">
-              <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">No</th>
-              <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">Description</th>
-              <th style="padding: 8px; border: 1px solid #ccc; text-align: center;">Boxes</th>
-              <th style="padding: 8px; border: 1px solid #ccc; text-align: right;">Rate</th>
-              <th style="padding: 8px; border: 1px solid #ccc; text-align: right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${challan.items.map((item, index) => `
-              <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${index + 1}</td>
-                <td style="padding: 8px; border: 1px solid #ccc;">${item.description}</td>
-                <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${item.boxes}</td>
-                <td style="padding: 8px; border: 1px solid #ccc; text-align: right;">${item.rate}</td>
-                <td style="padding: 8px; border: 1px solid #ccc; text-align: right;">${item.amount}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-
-        <div style="text-align: right; margin-top: 20px; font-size: 12px;">
-          <p><strong>Subtotal:</strong> ₹ ${subtotal.toFixed(2)}</p>
-          <p><strong>GST (5%):</strong> ₹ ${gstAmount.toFixed(2)}</p>
-          <p><strong>Delivery Charge:</strong> ₹ ${deliveryCharge === 0 ? "Free" : deliveryCharge.toFixed(2)}</p>
-          <p style="font-size: 14px; font-weight: bold;"><strong>Grand Total:</strong> ₹ ${totalAmount.toFixed(2)}</p>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px;">
-          <p style="color: #666;">Issuer’s Signature: ________________</p>
-          <p style="color: #666;">Receiver's Signature: ________________</p>
-        </div>
+      <!-- HEADER -->
+      <div style="text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 15px;">
+        <img src="${logo}" style="width: 120px; height: auto; margin-bottom: 10px;" />
+        <h1 style="font-size: 24px; margin: 5px 0; font-weight: bold;">OPTIMA POLYPLAST LLP</h1>
+        <p style="font-size: 12px; margin: 2px 0;">Plot No.12,296, Industrial Road, Near Umiya Battery</p>
+        <p style="font-size: 12px; margin: 2px 0;">Mota Jalundra Industrial Zone, Derojnagar, Gandhinagar, Gujarat</p>
+        <p style="font-size: 12px; margin: 2px 0;">Phone: +919274658587 | Email: info@optimapoliplast.com</p>
+        <p style="font-size: 10px; margin-top: 5px;">ISO 9001:2015 Certified Company</p>
       </div>
-    `;
-  };
+
+      <!-- CHALLAN INFO -->
+      <div style="margin-top: 20px; font-size: 13px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <p><strong>Challan No:</strong> ${challan.invoiceNo}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+
+        <p><strong>User Code:</strong> ${challan.userCode}</p>
+        <p><strong>Receiver:</strong> ${challan.receiverName}</p>
+
+        <p><strong>Vehicle No:</strong> ${challan.vehicleNo}</p>
+        <p><strong>Mobile No:</strong> ${challan.mobileNo}</p>
+
+        <p><strong>GST Number:</strong> ${challan.customerGST || "-"}</p>
+        <p><strong>PAN Number:</strong> ${challan.customerPAN || "-"}</p>
+
+        <p><strong>Driver Name:</strong> ${challan.driverName}</p>
+        <p><strong>Delivery Address:</strong> ${challan.deliveryAddress || "-"}</p>
+
+        <p><strong>Delivery Choice:</strong> ${challan.deliveryChoice || "Company Pickup"}</p>
+        <p><strong>Customer Name & Firm:</strong> ${challan.customerName || "-"} (${challan.firmName || "-"})</p>
+      </div>
+
+      <!-- ITEMS TABLE -->
+      <table style="width: 100%; margin-top: 25px; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="background: #eaf6ff;">
+            <th style="border: 1px solid #ccc; padding: 8px;">No</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Description</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Boxes</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Rate</th>
+            <th style="border: 1px solid #ccc; padding: 8px;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${challan.items
+            .map(
+              (item, index) => `
+              <tr>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align:center;">${index + 1}</td>
+                <td style="border: 1px solid #ccc; padding: 8px;">${item.description}</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align:center;">${item.boxes}</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align:right;">${item.rate}</td>
+                <td style="border: 1px solid #ccc; padding: 8px; text-align:right;">${item.amount}</td>
+              </tr>
+            `
+            )
+            .join("")}
+        </tbody>
+      </table>
+
+      <!-- TOTALS SECTION -->
+      <div style="text-align: right; margin-top: 25px; font-size: 13px;">
+        <p><strong>Subtotal:</strong> ₹ ${subtotal.toFixed(2)}</p>
+        <p><strong>GST (5%):</strong> ₹ ${gstAmount.toFixed(2)}</p>
+        <p><strong>Delivery Charge:</strong> ${deliveryCharge === 0 ? "Free" : `₹ ${deliveryCharge.toFixed(2)}`}</p>
+
+        <p style="font-size: 16px; font-weight: bold; margin-top: 10px;">
+          Grand Total: ₹ ${totalAmount.toFixed(2)}
+        </p>
+      </div>
+
+      <!-- SIGNATURES -->
+      <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 13px;">
+        <p>Issuer’s Signature: ____________</p>
+        <p>Receiver’s Signature: ____________</p>
+      </div>
+    </div>
+  `;
+};
 
   const downloadChallan = (challan) => {
     const element = document.createElement("div");
