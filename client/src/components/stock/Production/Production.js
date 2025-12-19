@@ -10,10 +10,10 @@ export default function Production() {
 
   const tabs = [
     // { id: 0, label: 'Production Outcome', component: ProductionOutcome },
-    { id: 1, label: 'Preform Production', component: PreformProduction },
-    { id: 2, label: 'Cap Production', component: CapProduction },
-    { id: 3, label: 'Bottle Production', component: BottleProduction },
-    { id: 4, label: 'Direct Usage', component: DirectUsage },
+    { id: 0, label: 'Preform Production', component: PreformProduction },
+    { id: 1, label: 'Cap Production', component: CapProduction },
+    { id: 2, label: 'Bottle Production', component: BottleProduction },
+    { id: 3, label: 'Direct Usage', component: DirectUsage },
   ];
 
   const ActiveComponent = tabs[activeTab].component;
