@@ -920,8 +920,9 @@ const ProductSelection = ({
               <input
                 key={field}
                 type="text"
-                placeholder={`Enter ${field.charAt(0).toUpperCase() + field.slice(1)}${field === "pinCode" ? " (6 digits)" : ""
-                  }`}
+                placeholder={`Enter ${
+                  field.charAt(0).toUpperCase() + field.slice(1)
+                }${field === "pinCode" ? " (6 digits)" : ""}`}
                 value={state.shippingAddress[field]}
                 onChange={(e) =>
                   dispatch({
@@ -930,7 +931,10 @@ const ProductSelection = ({
                     value: e.target.value,
                   })
                 }
-                className="border p-2 rounded-xl shadow-xl w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={state.deliveryChoice === "companyPickup"} // ✅ disable on pickup
+                className={`border p-2 rounded-xl shadow-xl w-full mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  state.deliveryChoice === "companyPickup" ? "bg-gray-200 cursor-not-allowed" : ""
+                }`}
               />
             ))}
           </div>
@@ -1197,9 +1201,7 @@ const CreateOrder = () => {
       );
       if (invalidBoxProducts.length > 0) {
         const names = invalidBoxProducts.map((p) => p.name).join(", ");
-        toast.error(
-          `Boxes must be at least 1 for: ${names}`
-        );
+        toast.error(`Boxes must be at least 1 for: ${names}`);
         dispatch({
           type: "SET_LOADING",
           field: "isLoadingOrder",
@@ -1233,9 +1235,8 @@ const CreateOrder = () => {
       }));
 
       let payload;
-
+      // ---------------------- MISCELLANEOUS CUSTOMERS ----------------------
       if (state.isMiscellaneous) {
-        // Miscellaneous customers: no minimum box requirement, but shippingAddress is still required
         payload = {
           products: validOrderProducts,
           paymentMethod: state.paymentMethod,
@@ -1246,57 +1247,74 @@ const CreateOrder = () => {
             state: "Gujarat",
             pinCode: "380001",
           },
-          // name & mobileNo required for miscellaneous per docs
           name: state.customerInfo.name,
           mobileNo: state.customerInfo.mobileNo,
         };
-      } else {
-        // Regular customers
-        const {
-          address,
-          city,
-          state: addressState,
-          pinCode,
-        } = state.shippingAddress;
+      } 
+      // ---------------------- REGULAR CUSTOMERS ----------------------
+      else {
+        let finalShippingAddress;
 
-        if (!address || !city || !addressState || !pinCode) {
-          toast.error("Complete shipping address with pin code is required.");
-          dispatch({
-            type: "SET_ERROR",
-            payload: "Complete shipping address with pin code is required.",
-          });
-          dispatch({
-            type: "SET_LOADING",
-            field: "isLoadingOrder",
-            value: false,
-          });
-          return;
-        }
+        if (state.deliveryChoice === "companyPickup") {
+          // FIXED ADDRESS FOR PICKUP
+          finalShippingAddress = {
+            address: "Company Warehouse",
+            city: "Ahmedabad",
+            state: "Gujarat",
+            pinCode: "380001",
+          };
+        } else {
+          // HOME DELIVERY → validate user address
+          const {
+            address,
+            city,
+            state: addressState,
+            pinCode,
+          } = state.shippingAddress;
 
-        if (!/^\d{6}$/.test(pinCode)) {
-          toast.error("Pin code must be 6 digits.");
-          dispatch({
-            type: "SET_ERROR",
-            payload: "Pin code must be 6 digits.",
-          });
-          dispatch({
-            type: "SET_LOADING",
-            field: "isLoadingOrder",
-            value: false,
-          });
-          return;
+          if (!address || !city || !addressState || !pinCode) {
+            toast.error("Complete shipping address with pin code is required.");
+            dispatch({
+              type: "SET_ERROR",
+              payload:
+                "Complete shipping address with pin code is required.",
+            });
+            dispatch({
+              type: "SET_LOADING",
+              field: "isLoadingOrder",
+              value: false,
+            });
+            return;
+          }
+
+          if (!/^\d{6}$/.test(pinCode)) {
+            toast.error("Pin code must be 6 digits.");
+            dispatch({
+              type: "SET_ERROR",
+              payload: "Pin code must be 6 digits.",
+            });
+            dispatch({
+              type: "SET_LOADING",
+              field: "isLoadingOrder",
+              value: false,
+            });
+            return;
+          }
+
+          finalShippingAddress = state.shippingAddress;
         }
 
         payload = {
           products: validOrderProducts,
           paymentMethod: state.paymentMethod,
           deliveryChoice: state.deliveryChoice,
-          shippingAddress: state.shippingAddress,
+          shippingAddress: finalShippingAddress,
         };
       }
 
-      // API documentation: POST /orders (with reception auth)
-      // Based on your existing prefix usage, using /reception/orders
+      //
+      // ---------------------- API CALL ----------------------
+      //
       const response = await api.post("/reception/user-panel/orders", payload);
 
       dispatch({
@@ -1315,7 +1333,8 @@ const CreateOrder = () => {
           isMiscellaneous: state.isMiscellaneous
             ? false
             : state.isMiscellaneous,
-          orderStatus: response.data?.message || "Order created successfully",
+          orderStatus:
+            response.data?.message || "Order created successfully",
         },
       });
 

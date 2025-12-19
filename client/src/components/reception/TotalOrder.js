@@ -177,7 +177,7 @@ export default function OrderManagement() {
     <div className="bg-white max-w-2xl w-full mx-4 rounded-lg p-6 shadow-lg">
       <h2 className="text-xl font-semibold mb-4">Order Details</h2>
       
-      <p><strong>Order ID:</strong> {detailModal.order._id}</p>
+      {/* <p><strong>Order ID:</strong> {detailModal.order._id}</p> */}
       <p><strong>Source:</strong> {detailModal.order.orderSource || 'N/A'}</p>
       <p><strong>Shipping:</strong> {formatShippingAddress(detailModal.order.shippingAddress)}</p>
 

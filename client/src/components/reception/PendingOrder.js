@@ -64,18 +64,12 @@ const PendingOrders = () => {
   const [pageSize, setPageSize] = useState(10);
 
   // fetch orders
-  const fetchPendingOrders = async () => {
+    const fetchPendingOrders = async () => {
     setLoading(true);
     try {
       const response = await api.get("/reception/orders/pending");
-      const pendingOrders = response.data.orders || [];
-      // if (pendingOrders.length === 0) {
-      //   const historyResponse = await api.get("/reception/orders/history"); //if pending payment list is 0 then history api will call
-      //   const allOrders = historyResponse.data.orders || [];
-      //   setPendingOrders(
-      //     allOrders.filter((o) => o.orderStatus?.toLowerCase() === "pending")
-      //   );
-      // } else setPendingOrders(pendingOrders);
+      const pendingOrders = Array.isArray(response.data) ? response.data : (response.data.orders || []);
+      setPendingOrders(pendingOrders);
     } catch {
       setError("Error fetching pending orders");
     } finally {
@@ -169,7 +163,6 @@ const PendingOrders = () => {
           />
         </div>
 
-        {/* TABLE */}
         {/*  TABLE  */}
         <div className="overflow-y-auto shadow-xl rounded-xl bg-white">
           <table className="min-w-full text-sm table-auto">

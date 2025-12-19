@@ -88,12 +88,26 @@ const Navbar = () => {
         </Link>
 
         <div className="flex space-x-4 items-center">
-        <Link to="/stock/dashboard" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+          <Link to="/stock/dashboard" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
             Home
           </Link>
-          <Link to="/attandance/stock" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
-            Attendance
+          <Link
+              to="/stock/production"
+              className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+              onClick={() => setIsStockDropdownOpen(false)}
+            >
+              Production
           </Link>
+          <Link
+              to="/stock/wastage"
+              className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+              onClick={() => setIsStockDropdownOpen(false)}
+            >
+              Wastage
+          </Link>
+          {/* <Link to="/attandance/stock" className="bg-blue-500 px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+            Attendance
+          </Link> */}
 
           {/* Stock Dropdown */}
           <div className="relative" ref={stockDropdownRef}>
@@ -116,13 +130,6 @@ const Navbar = () => {
             {isStockDropdownOpen && (
               <div className="absolute top-full left-0 mt-2 w-48 bg-white text-gray-800 rounded-lg shadow-lg z-50">
                 <Link
-                  to="/stock/bottles-caps"
-                  className="block px-4 py-2 hover:bg-blue-100 rounded-t-lg transition duration-300"
-                  onClick={() => setIsStockDropdownOpen(false)}
-                >
-                  Bottles & Caps
-                </Link>
-                <Link
                   to="/stock/raw-material"
                   className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
                   onClick={() => setIsStockDropdownOpen(false)}
@@ -130,25 +137,32 @@ const Navbar = () => {
                   Raw Material
                 </Link>
                 <Link
+                  to="/stock/bottles-caps"
+                  className="block px-4 py-2 hover:bg-blue-100 rounded-t-lg transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Bottles
+                </Link>
+                <Link
+                  to="/stock/labels"
+                  className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Labels
+                </Link>
+                <Link
+                  to="/stock/caps"
+                  className="block px-4 py-2 hover:bg-blue-100 transition duration-300"
+                  onClick={() => setIsStockDropdownOpen(false)}
+                >
+                  Caps
+                </Link>
+                <Link
                   to="/stock/outcome"
                   className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
                   onClick={() => setIsStockDropdownOpen(false)}
                 >
                   Outcome
-                </Link>
-                <Link
-                  to="/stock/production"
-                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
-                  onClick={() => setIsStockDropdownOpen(false)}
-                >
-                  Production
-                </Link>
-                <Link
-                  to="/stock/wastage"
-                  className="block px-4 py-2 hover:bg-blue-100 rounded-b-lg transition duration-300"
-                  onClick={() => setIsStockDropdownOpen(false)}
-                >
-                  Wastage
                 </Link>
               </div>
             )}

@@ -4,6 +4,19 @@ import html2pdf from "html2pdf.js";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaDownload, FaPrint, FaTimes, FaCheck, FaSync } from "react-icons/fa";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  CircularProgress,
+  Box,
+  Typography,
+} from "@mui/material";
 import logo from "../../assets/logo1.png";
 import cookies from "js-cookie";
 import OrderActions from "./OrderActions";
@@ -141,7 +154,6 @@ const DispatchComponent = () => {
     try {
       setIsLoading(true);
 
-      // 🔥 Format EXACTLY as required by Backend:
       const payload = {
         splitInfo: {
           numberOfChallans: wizardData.splitInfo.numberOfChallans,
@@ -153,11 +165,7 @@ const DispatchComponent = () => {
         ),
         deliveryChoice: selectedOrder.deliveryChoice || "homeDelivery",
         shippingAddress: selectedOrder.shippingAddress || {},
-
-        // MUST be array from Wizard
         vehicleDetails: wizardData.vehicleDetails || [],
-
-        // receiverName MUST come from Wizard or fallback to order data:
         receiverName:
           wizardData.receiverName ||
           selectedOrder.firmName ||
@@ -318,6 +326,33 @@ const DispatchComponent = () => {
   };
 
   /** ------------------------------------------------------
+   * HELPER: Get status chip color
+   * ------------------------------------------------------ */
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "processing":
+        return "warning";
+      case "confirmed":
+        return "info";
+      case "shipped":
+        return "success";
+      default:
+        return "default";
+    }
+  };
+
+  const getPaymentColor = (status) => {
+    switch (status) {
+      case "pending":
+        return "error";
+      case "completed":
+        return "success";
+      default:
+        return "warning";
+    }
+  };
+
+  /** ------------------------------------------------------
    * INITIAL FETCH
    * ------------------------------------------------------ */
   useEffect(() => {
@@ -344,14 +379,14 @@ const DispatchComponent = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500"></div>
-          </div>
+          <Box display="flex" justifyContent="center" alignItems="center" height={200}>
+            <CircularProgress size={48} />
+          </Box>
         ) : processingOrders.length > 0 ? (
-          <div className="overflow-x-auto w-full min-h-[60vh]">
-            <table className="min-w-[1000px] border-collapse">
-              <thead>
-                <tr className="bg-gradient-to-r from-blue-50 to-teal-50 text-gray-700">
+          <TableContainer component={Paper} sx={{ maxHeight: "70vh" }}>
+            <Table stickyHeader sx={{ minWidth: 1000 }}>
+              <TableHead>
+                <TableRow>
                   {[
                     "Firm Name",
                     "Type",
@@ -367,99 +402,96 @@ const DispatchComponent = () => {
                     "Total",
                     "Actions",
                   ].map((header) => (
-                    <th
+                    <TableCell
                       key={header}
-                      className="py-3 px-4 text-left font-semibold"
+                      sx={{
+                        fontWeight: 600,
+                        backgroundColor: "#f0f9ff",
+                        color: "#374151",
+                      }}
                     >
                       {header}
-                    </th>
+                    </TableCell>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {processingOrders.map((order, index) => (
-                  <tr
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {processingOrders.map((order) => (
+                  <TableRow
                     key={order._id}
-                    className={`border-b hover:bg-gray-50 transition-colors duration-150 ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
+                    sx={{
+                      "&:hover": { backgroundColor: "#f9fafb" },
+                      "&:nth-of-type(odd)": { backgroundColor: "#fafafa" },
+                    }}
                   >
-                    <td className="py-3 px-4 font-medium">{order.firmName}</td>
-                    <td className="py-3 px-4">{order.type}</td>
-                    <td className="py-3 px-4">{order.user?.name}</td>
-                    <td className="py-3 px-4">
+                    <TableCell sx={{ fontWeight: 500 }}>
+                      {order.firmName}
+                    </TableCell>
+                    <TableCell>{order.type}</TableCell>
+                    <TableCell>{order.user?.name}</TableCell>
+                    <TableCell>
                       {order.user?.customerDetails?.userCode || "N/A"}
-                    </td>
-                    <td className="py-2 px-4 border-b">
-                      {order.user?.phoneNumber || "N/A"}
-                    </td>
-                    <td className="py-3 px-4 max-w-xs truncate">
-                      {order.shippingAddress
-                        ? `${order.shippingAddress.address || ""}, ${
-                            order.shippingAddress.city || ""
-                          }, ${order.shippingAddress.state || ""} - ${
-                            order.shippingAddress.pinCode || ""
-                          }`
-                        : "N/A"}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-sm font-medium ${
-                          order.orderStatus === "processing"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : order.orderStatus === "confirmed"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {order.orderStatus}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-sm ${
-                          order.paymentStatus === "pending"
-                            ? "bg-red-100 text-red-800"
-                            : order.paymentStatus === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-orange-100 text-orange-800"
-                        }`}
-                      >
-                        {order.paymentStatus}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">{order.paymentMethod}</td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell>{order.user?.phoneNumber || "N/A"}</TableCell>
+                    <TableCell sx={{ maxWidth: 250 }}>
+                      <Typography variant="body2" noWrap>
+                        {order.shippingAddress
+                          ? `${order.shippingAddress.address || ""}, ${
+                              order.shippingAddress.city || ""
+                            }, ${order.shippingAddress.state || ""} - ${
+                              order.shippingAddress.pinCode || ""
+                            }`
+                          : "N/A"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={order.orderStatus}
+                        color={getStatusColor(order.orderStatus)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={order.paymentStatus}
+                        color={getPaymentColor(order.paymentStatus)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{order.paymentMethod}</TableCell>
+                    <TableCell>
                       {order.products.map((item, i) => (
-                        <div key={i} className="text-sm">
+                        <Typography key={i} variant="body2" fontSize="0.875rem">
                           {item.product?.name}: {item.boxes}
-                        </div>
+                        </Typography>
                       ))}
-                    </td>
-                    <td className="py-3 px-4">
-                      ₹ {order.deliveryCharge || 0}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-blue-600">
+                    </TableCell>
+                    <TableCell>₹ {order.deliveryCharge || 0}</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: "#2563eb" }}>
                       ₹{" "}
-                      {order.totalAmountWithDelivery ||
-                        order.totalAmount}
-                    </td>
-                    <td className="py-3 px-4 text-right">
+                      {order.totalAmountWithDelivery || order.totalAmount}
+                    </TableCell>
+                    <TableCell>
                       <OrderActions
                         order={order}
                         updateOrderStatus={updateOrderStatus}
                         handleOrderSelection={handleOrderSelection}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
         ) : (
-          <p className="text-gray-500 text-center py-8">
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            textAlign="center"
+            py={8}
+          >
             No active processing orders found.
-          </p>
+          </Typography>
         )}
       </div>
 
@@ -474,9 +506,9 @@ const DispatchComponent = () => {
           onSuccess={generateChallansFromWizard}
         />
       )}
-
+      
       {/* GENERATED CHALLANS LIST */}
-      {generatedChallans.length > 0 && (
+      {/* {generatedChallans.length > 0 && (
         <div className="mt-6 bg-white p-6 rounded-xl shadow-xl border border-gray-100">
           <h2 className="text-xl font-semibold mb-6 text-gray-800 bg-gradient-to-r from-blue-500 to-teal-500 bg-clip-text text-transparent">
             Generated Challans
@@ -495,7 +527,7 @@ const DispatchComponent = () => {
             loading={isLoading}
           />
         </div>
-      )}
+      )} */}
 
       {/* RESCHEDULE MODAL */}
       {showRescheduleModal && selectedChallan && (

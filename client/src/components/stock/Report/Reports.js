@@ -3,6 +3,8 @@ import { FileText, Package, Factory, TrendingUp } from 'lucide-react';
 import StockReportTab from './StockReport';
 import ProductionReportTab from './ProductionReport';
 import UsageReportTab from './UsageReport';
+import PreformReport from './PreformReport';
+import CapReport from './CapReport';
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState('stock');
@@ -10,7 +12,9 @@ const Reports = () => {
   const tabs = [
     { id: 'stock', name: 'Stock Report', icon: Package },
     { id: 'production', name: 'Production Report', icon: Factory },
-    { id: 'usage', name: 'Usage Report', icon: TrendingUp }
+    { id: 'usage', name: 'Usage Report', icon: TrendingUp },
+    { id: 'preform', name: 'Preform Report', icon: Package },
+    { id: 'cap', name: 'Cap Report', icon: Package },
   ];
 
   return (
@@ -50,6 +54,8 @@ const Reports = () => {
             {activeTab === 'stock' && <StockReportTab />}
             {activeTab === 'production' && <ProductionReportTab />}
             {activeTab === 'usage' && <UsageReportTab />}
+            {activeTab === 'preform' && <PreformReport />}
+            {activeTab === 'cap' && <CapReport />}
           </div>
         </div>
       </div>

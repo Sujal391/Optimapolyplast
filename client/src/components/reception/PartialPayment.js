@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-import { MoreVertical, X } from "lucide-react";
+import { MoreVertical, X, ArrowLeft } from "lucide-react";
 import Paginator from "../common/Paginator";
 import {
   Table,
@@ -28,13 +28,12 @@ import {
   DialogActions,
   Select,
   FormControl,
-  InputLabel,
   Divider,
   Grid,
   Card,
   CardContent,
+  LinearProgress,
 } from "@mui/material";
-import { Download, Eye } from "lucide-react";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API,
@@ -90,7 +89,7 @@ const toast = {
 };
 
 // Dropdown Menu Component
-const DropdownMenu = ({ onViewDetails, onUpdateStatus, onAddCharge, disableAddCharge }) => {
+const DropdownMenu = ({ onViewDetails }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -104,52 +103,29 @@ const DropdownMenu = ({ onViewDetails, onUpdateStatus, onAddCharge, disableAddCh
 
   return (
     <>
-      <IconButton
-        onClick={handleClick}
-        size="small"
-      >
+      <IconButton onClick={handleClick} size="small">
         <MoreVertical size={18} />
       </IconButton>
-      <Menu
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-      >
+      <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
         <MenuItem onClick={() => { onViewDetails(); handleClose(); }}>
           View Details
-        </MenuItem>
-        <MenuItem onClick={() => { onUpdateStatus(); handleClose(); }}>
-          Update Status
-        </MenuItem>
-        <MenuItem 
-          onClick={() => { 
-            if (!disableAddCharge) {
-              onAddCharge(); 
-              handleClose();
-            }
-          }}
-          disabled={disableAddCharge}
-          sx={{ color: disableAddCharge ? 'text.disabled' : 'success.main' }}
-        >
-          Add Delivery Charge
         </MenuItem>
       </Menu>
     </>
   );
 };
 
-const PendingPayment = () => {
+const PartialPayment = () => {
   const navigate = useNavigate();
 
-  // PENDING PAYMENTS STATE
-  const [pendingPayments, setPendingPayments] = useState([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [pendingLoading, setPendingLoading] = useState(true);
-  const [pendingError, setPendingError] = useState("");
-  const [pendingPage, setPendingPage] = useState(1);
-  const [pendingPageSize, setPendingPageSize] = useState(10);
-  const [downloadingExcel, setDownloadingExcel] = useState(false);
-  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  // PARTIAL PAYMENTS STATE
+  const [partialPayments, setPartialPayments] = useState([]);
+  const [partialCount, setPartialCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // VIEW DETAILS MODAL
   const [detailsModal, setDetailsModal] = useState({
@@ -158,103 +134,21 @@ const PendingPayment = () => {
     loading: false,
   });
 
-  // UPDATE PAYMENT STATUS MODAL
-  const [statusModal, setStatusModal] = useState({
-    isOpen: false,
-    paymentId: null,
-    currentStatus: "",
-    remainingAmount: 0,
-  });
-
-  const [statusForm, setStatusForm] = useState({
-    paymentStatus: "completed",
-    receivedAmount: "",
-    remarks: "",
-  });
-
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-
-  // DELIVERY CHARGE MODAL STATE
-  const [chargeModal, setChargeModal] = useState({
-    isOpen: false,
-    orderId: null,
-    deliveryCharge: '',
-    error: ''
-  });
-
-  // FETCH PENDING PAYMENTS
-  const fetchPendingPayments = async () => {
-    setPendingLoading(true);
-    setPendingError("");
+  // FETCH PARTIAL PAYMENTS
+  const fetchPartialPayments = async () => {
+    setLoading(true);
+    setError("");
     try {
-      // Use correct endpoint from documentation
-      const res = await api.get("reception/pending-payments");
+      const res = await api.get("reception/partial-payments");
       const data = res.data || {};
-      setPendingPayments(data.pendingPayments || []);
-      setPendingCount(data.count || (data.pendingPayments || []).length || 0);
+      setPartialPayments(data.partialPayments || []);
+      setPartialCount(data.count || (data.partialPayments || []).length || 0);
     } catch (error) {
       console.error(error);
-      setPendingError("Error fetching pending payments");
-      toast.error("Error fetching pending payments");
+      setError("Error fetching partial payments");
+      toast.error("Error fetching partial payments");
     } finally {
-      setPendingLoading(false);
-    }
-  };
-
-  // DOWNLOAD PENDING PAYMENTS EXCEL
-  const handleDownloadExcel = async () => {
-  setDownloadingExcel(true);
-  try {
-    const res = await api.get("reception/pending-payments/download", {
-      responseType: "blob",
-    });
-
-    const blob = new Blob([res.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "pending_payments.xlsx");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-
-    toast.success("Pending payments Excel downloaded");
-  } catch (error) {
-    console.error(error);
-    toast.error("Error downloading pending payments Excel");
-  } finally {
-    setDownloadingExcel(false);
-  }
-};
-
-  // ADD DELIVERY CHARGE FUNCTION
-  const addDeliveryCharge = async () => {
-    const charge = parseFloat(chargeModal.deliveryCharge);
-
-    if (!chargeModal.orderId || isNaN(charge) || charge < 0) {
-      setChargeModal(prev => ({
-        ...prev,
-        error: 'Please enter a valid delivery charge (₹).'
-      }));
-      return;
-    }
-
-    try {
-      const res = await api.post("/reception/orders/add-delivery-charge", {
-        orderId: chargeModal.orderId,
-        deliveryCharge: charge,
-      });
-
-      toast.success(res.data?.message || "Delivery Charge Added!");
-      fetchPendingPayments();
-
-      setChargeModal({ isOpen: false, orderId: null, deliveryCharge: "", error: "" });
-    } catch (err) {
-      const errorMsg = err.response?.data?.error || "Error adding delivery charge";
-      setChargeModal(prev => ({ ...prev, error: errorMsg }));
+      setLoading(false);
     }
   };
 
@@ -275,7 +169,6 @@ const PendingPayment = () => {
       });
     } catch (error) {
       console.error("Error fetching payment details:", error);
-      // Fallback to basic payment data if API fails
       setDetailsModal({
         isOpen: true,
         payment,
@@ -293,199 +186,39 @@ const PendingPayment = () => {
     });
   };
 
-  // OPEN STATUS MODAL
-  const openStatusModal = (payment) => {
-    setStatusModal({
-      isOpen: true,
-      paymentId: payment.paymentId,
-      currentStatus: payment.paymentStatus || payment.status || "pending",
-      remainingAmount: payment.remainingAmount || 0,
-    });
-    setStatusForm({
-      paymentStatus: "completed",
-      receivedAmount: payment.remainingAmount || "",
-      remarks: "",
-    });
-  };
-
-  const closeStatusModal = () => {
-    setStatusModal({
-      isOpen: false,
-      paymentId: null,
-      currentStatus: "",
-      remainingAmount: 0,
-    });
-    setStatusForm({
-      paymentStatus: "completed",
-      receivedAmount: "",
-      remarks: "",
-    });
-  };
-  
-  const isLocalDeliveryPincode = (pinCode) => {
-    if (!pinCode) return false;
-
-    const pin = Number(pinCode);
-
-    // Ahmedabad range
-    if (pin >= 380001 && pin <= 382481) return true;
-
-    // Gandhinagar range
-    if (pin >= 382010 && pin <= 382855) return true;
-
-    return false;
-  };
-
-  // DELIVERY CHARGE MODAL
-  const openChargeModal = (payment) => {
-    const pinCode = payment.shippingAddress?.pinCode;
-    if (isLocalDeliveryPincode(pinCode)) {
-      toast.warning('Delivery charges cannot be added for Ahmedabad or Gandhinagar');
-      return;
-    }
-
-    setChargeModal({
-      isOpen: true,
-      orderId: payment.orderId,
-      deliveryCharge: payment.deliveryCharge || '',
-      error: ''
-    });
-  };
-
-  // SUBMIT STATUS UPDATE
-  const handleUpdatePaymentStatus = async () => {
-  const { paymentStatus, receivedAmount, remarks } = statusForm;
-  const { paymentId, remainingAmount } = statusModal;
-
-  // Validation
-  if (!paymentStatus) {
-    return toast.warning("Please select a payment status.");
-  }
-
-  const parsedAmount = parseFloat(receivedAmount);
-  if (isNaN(parsedAmount) || parsedAmount <= 0) {
-    return toast.warning("Please enter a valid received amount.");
-  }
-
-  if (remainingAmount && parsedAmount > remainingAmount) {
-    return toast.warning(
-      `Received amount (₹${parsedAmount}) cannot exceed remaining amount (₹${remainingAmount}).`
-    );
-  }
-
-  setUpdatingStatus(true);
-
-  try {
-    // CHANGE 1: Use PUT method instead of PATCH
-    // CHANGE 2: Use correct endpoint: reception/payment/:paymentId/status
-    const res = await api.put(`/reception/payment/${paymentId}/status`, {
-      paymentStatus,
-      receivedAmount: parsedAmount,
-      remarks: remarks || undefined,
-    });
-
-    const updated = res.data?.payment;
-    toast.success(res.data?.message || "Payment status updated successfully");
-
-    if (updated) {
-      setPendingPayments((prev) =>
-        prev.map((p) =>
-          p.paymentId === paymentId
-            ? {
-                ...p,
-                // CHANGE 3: Backend returns 'status', not 'paymentStatus'
-                paymentStatus: updated.status,
-                status: updated.status,
-                paidAmount: typeof updated.paidAmount === "number" 
-                  ? updated.paidAmount 
-                  : p.paidAmount,
-                remainingAmount: typeof updated.remainingAmount === "number" 
-                  ? updated.remainingAmount 
-                  : p.remainingAmount,
-                totalAmount: typeof updated.totalAmount === "number" 
-                  ? updated.totalAmount 
-                  : p.totalAmount,
-                totalAmountWithDelivery: typeof updated.totalAmountWithDelivery === "number"
-                  ? updated.totalAmountWithDelivery
-                  : p.totalAmountWithDelivery,
-                // OPTIONAL: Store who updated and when
-                updatedBy: updated.updatedBy,
-                updatedAt: updated.updatedAt,
-              }
-            : p
-        )
-      );
-    } else {
-      // Fallback if payment object not returned
-      setPendingPayments((prev) =>
-        prev.map((p) =>
-          p.paymentId === paymentId 
-            ? { ...p, paymentStatus, status: paymentStatus } 
-            : p
-        )
-      );
-    }
-
-    closeStatusModal();
-  } catch (error) {
-    console.error(error);
-    
-    // CHANGE 4: Better error handling for overpayment scenarios
-    const errorData = error?.response?.data;
-    
-    if (errorData?.details) {
-      // Backend sent detailed overpayment error
-      const { totalDue, alreadyPaid, attemptingToPay, maxAllowed } = errorData.details;
-      toast.error(
-        `${errorData.error}. Already paid: ₹${alreadyPaid}, ` +
-        `Maximum allowed: ₹${maxAllowed}`
-      );
-    } else {
-      // Generic error
-      toast.error(
-        errorData?.message ||
-        errorData?.error ||
-        "Error updating payment status"
-      );
-    }
-  } finally {
-    setUpdatingStatus(false);
-  }
-};
 
   // INITIAL LOAD
   useEffect(() => {
-    fetchPendingPayments();
+    fetchPartialPayments();
   }, []);
 
   // FILTER FUNCTION
-  const filterPendingPayments = (payments, searchTerm) => {
-    if (!searchTerm.trim()) return payments;
-    
-    const term = searchTerm.toLowerCase();
+  const filterPayments = (payments, term) => {
+    if (!term.trim()) return payments;
+
+    const searchLower = term.toLowerCase();
     return payments.filter((payment) => {
       return (
-        payment.paymentId?.toLowerCase().includes(term) ||
-        payment.orderId?.toLowerCase().includes(term) ||
-        payment.user?.name?.toLowerCase().includes(term) ||
-        payment.user?.firmName?.toLowerCase().includes(term) ||
-        payment.firmName?.toLowerCase().includes(term) ||
-        payment.user?.userCode?.toLowerCase().includes(term) ||
-        payment.user?.phoneNumber?.toLowerCase().includes(term) ||
-        payment.user?.email?.toLowerCase().includes(term) ||
-        payment.paymentStatus?.toLowerCase().includes(term) ||
-        payment.status?.toLowerCase().includes(term) ||
-        payment.orderStatus?.toLowerCase().includes(term)
+        payment.paymentId?.toLowerCase().includes(searchLower) ||
+        payment.orderId?.toLowerCase().includes(searchLower) ||
+        payment.user?.name?.toLowerCase().includes(searchLower) ||
+        payment.user?.firmName?.toLowerCase().includes(searchLower) ||
+        payment.firmName?.toLowerCase().includes(searchLower) ||
+        payment.user?.userCode?.toLowerCase().includes(searchLower) ||
+        payment.user?.phoneNumber?.toLowerCase().includes(searchLower) ||
+        payment.user?.email?.toLowerCase().includes(searchLower) ||
+        payment.paymentStatus?.toLowerCase().includes(searchLower) ||
+        payment.orderStatus?.toLowerCase().includes(searchLower)
       );
     });
   };
 
   // APPLY FILTERS AND PAGINATION
-  const filteredPending = filterPendingPayments(pendingPayments, pendingSearchTerm);
-  const pendingTotal = filteredPending.length;
-  const pendingStartIdx = (pendingPage - 1) * pendingPageSize;
-  const pendingEndIdx = pendingStartIdx + pendingPageSize;
-  const pagedPending = filteredPending.slice(pendingStartIdx, pendingEndIdx);
+  const filteredPayments = filterPayments(partialPayments, searchTerm);
+  const total = filteredPayments.length;
+  const startIdx = (page - 1) * pageSize;
+  const endIdx = startIdx + pageSize;
+  const pagedPayments = filteredPayments.slice(startIdx, endIdx);
 
   const formatShippingAddress = (address) =>
     address ? `${address.address || ''}, ${address.city || ''}, ${address.state || ''} ${address.pinCode || ''}` : 'N/A';
@@ -493,49 +226,46 @@ const PendingPayment = () => {
   return (
     <Box sx={{ bgcolor: '#e8f5e9', minHeight: '100vh', p: 3 }}>
       <Box sx={{ maxWidth: '1400px', mx: 'auto' }}>
-        <Typography variant="h4" fontWeight="bold" textAlign="center" mb={3}>
-          Pending Payments
-        </Typography>
+        {/* Header with Back Button */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowLeft size={16} />}
+            onClick={() => navigate('/reception/pending-payments')}
+          >
+            Back
+          </Button>
+          <Typography variant="h4" fontWeight="bold" textAlign="center" sx={{ flex: 1 }}>
+            Partial Payments
+          </Typography>
+        </Box>
 
-        {/* Search & Download */}
+        {/* Search */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, gap: 2 }}>
           <TextField
             placeholder="Search by Order ID, Name, Phone..."
             size="small"
-            value={pendingSearchTerm}
+            value={searchTerm}
             onChange={(e) => {
-              setPendingSearchTerm(e.target.value);
-              setPendingPage(1);
+              setSearchTerm(e.target.value);
+              setPage(1);
             }}
             sx={{ flex: 1, maxWidth: 400, bgcolor: 'white' }}
           />
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              variant="outlined"
-              color="secondary"
-              startIcon={<Eye size={16} />}
-              onClick={() => navigate('/reception/partial-payments')}
-            >
-              View Partial Payments
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={downloadingExcel ? <CircularProgress size={16} color="inherit" /> : <Download size={16} />}
-              onClick={handleDownloadExcel}
-              disabled={downloadingExcel}
-            >
-              {downloadingExcel ? "Downloading..." : "Download Excel"}
-            </Button>
-          </Box>
+          <Chip
+            label={`${partialCount} Partial Payments`}
+            color="warning"
+            variant="outlined"
+          />
         </Box>
 
-        {pendingSearchTerm && (
+        {searchTerm && (
           <Typography variant="body2" color="text.secondary" mb={2}>
-            Found {pendingTotal} result{pendingTotal !== 1 ? 's' : ''}
+            Found {total} result{total !== 1 ? 's' : ''}
           </Typography>
         )}
 
-        {pendingError && <Alert severity="error" sx={{ mb: 2 }}>{pendingError}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
         {/* Table */}
         <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
@@ -545,65 +275,58 @@ const PendingPayment = () => {
                 <TableCell sx={{ fontWeight: 'bold' }}>User Code</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Date & Time</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Customer</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Phone</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Firm</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Phone</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Total Amount</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Delivery Charge</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Total with Delivery</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Paid Amount</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Remaining</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Paid</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Payment Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Payment %</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Order Status</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {pendingLoading ? (
+              {loading ? (
                 <TableRow>
-                  <TableCell colSpan={14} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
-              ) : pagedPending.length > 0 ? (
-                pagedPending.map((payment) => (
+              ) : pagedPayments.length > 0 ? (
+                pagedPayments.map((payment) => (
                   <TableRow key={payment.paymentId} hover>
                     <TableCell>{payment.user?.userCode || '(Misc)'}</TableCell>
                     <TableCell>{formatDateTime(payment.createdAt)}</TableCell>
                     <TableCell>{payment.user?.name || "N/A"}</TableCell>
-                    <TableCell>{payment.user?.email || "N/A"}</TableCell>
-                    <TableCell>{payment.user?.phoneNumber || "N/A"}</TableCell>
                     <TableCell>{payment.user?.firmName || payment.firmName || "N/A"}</TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{formatCurrency(payment.totalAmount)}</TableCell>
-                    <TableCell sx={{ fontWeight: 500 }}>{formatCurrency(payment.deliveryCharge)}</TableCell>
+                    <TableCell>{payment.user?.phoneNumber || "N/A"}</TableCell>
                     <TableCell sx={{ fontWeight: 500 }}>{formatCurrency(payment.totalAmountWithDelivery)}</TableCell>
-                    <TableCell sx={{ color: 'error.main', fontWeight: 500 }}>{formatCurrency(payment.remainingAmount)}</TableCell>
                     <TableCell sx={{ color: 'success.main', fontWeight: 500 }}>{formatCurrency(payment.paidAmount)}</TableCell>
+                    <TableCell sx={{ color: 'error.main', fontWeight: 500 }}>{formatCurrency(payment.remainingAmount)}</TableCell>
                     <TableCell>
-                      <Chip 
-                        label={payment.paymentStatus || payment.status || "N/A"} 
-                        color={getPaymentStatusColor(payment.paymentStatus || payment.status)}
-                        size="small"
-                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={parseFloat(payment.paymentPercentage) || 0}
+                          sx={{ width: 60, height: 8, borderRadius: 4 }}
+                          color={parseFloat(payment.paymentPercentage) >= 50 ? "success" : "warning"}
+                        />
+                        <Typography variant="body2" fontWeight={500}>
+                          {payment.paymentPercentage || 0}%
+                        </Typography>
+                      </Box>
                     </TableCell>
                     <TableCell>{payment.orderStatus || "N/A"}</TableCell>
                     <TableCell>
-                      <DropdownMenu
-                        onViewDetails={() => openDetailsModal(payment)}
-                        onUpdateStatus={() => openStatusModal(payment)}
-                        onAddCharge={() => openChargeModal(payment)}
-                        disableAddCharge={isLocalDeliveryPincode(
-                          payment.shippingAddress?.pinCode
-                        )}
-                      />
+                      <DropdownMenu onViewDetails={() => openDetailsModal(payment)} />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={14} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                    No pending payments found.
+                  <TableCell colSpan={11} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                    No partial payments found.
                   </TableCell>
                 </TableRow>
               )}
@@ -614,20 +337,20 @@ const PendingPayment = () => {
         {/* PAGINATION */}
         <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="body2" color="text.secondary">
-            Showing {Math.min(pendingTotal, pendingStartIdx + 1)}–{Math.min(pendingTotal, pendingEndIdx)} of {pendingTotal}
+            Showing {Math.min(total, startIdx + 1)}–{Math.min(total, endIdx)} of {total}
           </Typography>
           <Paginator
-            page={pendingPage}
-            pageSize={pendingPageSize}
-            total={pendingTotal}
-            onPageChange={setPendingPage}
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
           />
           <FormControl size="small" sx={{ minWidth: 100 }}>
             <Select
-              value={pendingPageSize}
+              value={pageSize}
               onChange={(e) => {
-                setPendingPage(1);
-                setPendingPageSize(parseInt(e.target.value, 10));
+                setPage(1);
+                setPageSize(parseInt(e.target.value, 10));
               }}
             >
               {[5, 10, 20, 50].map((n) => (
@@ -639,6 +362,7 @@ const PendingPayment = () => {
           </FormControl>
         </Box>
       </Box>
+
 
       {/* VIEW DETAILS MODAL */}
       <Dialog
@@ -667,14 +391,6 @@ const PendingPayment = () => {
                   Basic Information
                 </Typography>
                 <Grid container spacing={2}>
-                  {/* <Grid item xs={6}>
-                    <Typography variant="caption" color="text.secondary">Payment ID</Typography>
-                    <Typography variant="body2" fontWeight={500}>{detailsModal.payment.paymentId}</Typography>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="caption" color="text.secondary">Order ID</Typography>
-                    <Typography variant="body2" fontWeight={500}>{detailsModal.payment.orderId || "N/A"}</Typography>
-                  </Grid> */}
                   <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Customer Name</Typography>
                     <Typography variant="body2" fontWeight={500}>{detailsModal.payment.user?.name || "N/A"}</Typography>
@@ -754,12 +470,34 @@ const PendingPayment = () => {
                     <Typography variant="h6" fontWeight={600}>{formatCurrency(detailsModal.payment.totalAmountWithDelivery)}</Typography>
                   </Grid>
                   <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Remaining Amount</Typography>
+                    <Typography variant="h6" fontWeight={600} color="error.main">{formatCurrency(detailsModal.payment.remainingAmount)}</Typography>
+                  </Grid>
+                  <Grid item xs={6}>
+                    <Typography variant="caption" color="text.secondary">Payment Percentage</Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={parseFloat(detailsModal.payment.paymentPercentage) || 0}
+                        sx={{ width: 80, height: 10, borderRadius: 4 }}
+                        color={parseFloat(detailsModal.payment.paymentPercentage) >= 50 ? "success" : "warning"}
+                      />
+                      <Typography variant="h6" fontWeight={600}>
+                        {detailsModal.payment.paymentPercentage || 0}%
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Payment Method</Typography>
                     <Typography variant="body2" fontWeight={500}>{detailsModal.payment.paymentMethod || "N/A"}</Typography>
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Payment Status</Typography>
-                    <Typography variant="body2" fontWeight={500}>{detailsModal.payment.paymentStatus || "N/A"}</Typography>
+                    <Chip
+                      label={detailsModal.payment.paymentStatus || detailsModal.payment.status || "N/A"}
+                      color={getPaymentStatusColor(detailsModal.payment.paymentStatus || detailsModal.payment.status)}
+                      size="small"
+                    />
                   </Grid>
                   <Grid item xs={6}>
                     <Typography variant="caption" color="text.secondary">Order Status</Typography>
@@ -801,6 +539,7 @@ const PendingPayment = () => {
                   </Box>
                 </>
               )}
+
 
               {/* Payment History Section */}
               {detailsModal.payment.paymentHistory?.length > 0 && (
@@ -873,115 +612,8 @@ const PendingPayment = () => {
           </>
         ) : null}
       </Dialog>
-
-      {/* UPDATE PAYMENT STATUS MODAL */}
-      <Dialog open={statusModal.isOpen} onClose={closeStatusModal} maxWidth="sm" fullWidth>
-        <DialogTitle>Update Payment Status</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Current status: <strong>{statusModal.currentStatus || "pending"}</strong>
-          </Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
-            Remaining amount: <strong>{formatCurrency(statusModal.remainingAmount)}</strong>
-          </Typography>
-
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>Payment Status</InputLabel>
-            <Select
-              value={statusForm.paymentStatus}
-              label="Payment Status"
-              onChange={(e) =>
-                setStatusForm((prev) => ({ ...prev, paymentStatus: e.target.value }))
-              }
-            >
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="partial">Partial</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
-              <MenuItem value="failed">Failed</MenuItem>
-            </Select>
-          </FormControl>
-
-          <TextField
-            fullWidth
-            type="number"
-            label="Received Amount"
-            value={statusForm.receivedAmount}
-            onChange={(e) =>
-              setStatusForm((prev) => ({ ...prev, receivedAmount: e.target.value }))
-            }
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="Remarks"
-            placeholder="Optional notes about this payment..."
-            value={statusForm.remarks}
-            onChange={(e) => setStatusForm((prev) => ({ ...prev, remarks: e.target.value }))}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeStatusModal} disabled={updatingStatus}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpdatePaymentStatus}
-            variant="contained"
-            disabled={updatingStatus}
-            startIcon={updatingStatus && <CircularProgress size={16} />}
-          >
-            {updatingStatus ? "Updating..." : "Update"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* DELIVERY CHARGE MODAL */}
-      <Dialog open={chargeModal.isOpen} onClose={() => setChargeModal({ isOpen: false, orderId: null, deliveryCharge: '', error: '' })} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Delivery Charge</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
-            Order ID: <strong>{chargeModal.orderId}</strong>
-          </Typography>
-
-          <TextField
-            fullWidth
-            type="number"
-            label="Delivery Charge (₹)"
-            placeholder="Enter delivery charge amount"
-            value={chargeModal.deliveryCharge}
-            onChange={(e) =>
-              setChargeModal((prev) => ({ 
-                ...prev, 
-                deliveryCharge: e.target.value,
-                error: '' 
-              }))
-            }
-            inputProps={{ step: "0.01", min: "0" }}
-          />
-
-          {chargeModal.error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {chargeModal.error}
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setChargeModal({ isOpen: false, orderId: null, deliveryCharge: '', error: '' })}>
-            Cancel
-          </Button>
-          <Button
-            onClick={addDeliveryCharge}
-            variant="contained"
-            color="success"
-          >
-            Add Charge
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
 
-export default PendingPayment;
+export default PartialPayment;
