@@ -7,12 +7,15 @@ import {
   getPreformProductions
 } from '../../../services/api/stock';
 import { Trash2 } from 'lucide-react';
+import PreformDetails from './PreformDetails';
 
 export default function PreformProduction() {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Production list state
   const [allProductionData, setAllProductionData] = useState([]); // Full dataset
@@ -82,6 +85,11 @@ export default function PreformProduction() {
     } finally {
       setListLoading(false);
     }
+  };
+
+  const handleViewDetails = (row) => {
+    setSelectedId(row.preformProductionId || row._id);
+    setIsDetailsOpen(true);
   };
 
   // Apply local filtering, sorting, and pagination
@@ -347,6 +355,11 @@ export default function PreformProduction() {
       key: 'available',
       label: 'Available',
       render: (row) => row.statistics?.available || 0
+    },
+    {
+      key: 'action',
+      label: 'Action',
+      render: (row) => <button onClick={() => handleViewDetails(row)}>View</button>
     }
   ];
 
@@ -589,6 +602,11 @@ export default function PreformProduction() {
           reportSummary={reportSummary}
         />
       </div>
+      <PreformDetails
+        productionId={selectedId}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+      />
     </div>
   );
 }

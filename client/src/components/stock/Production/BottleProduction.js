@@ -10,13 +10,15 @@ import {
   getLabels,
   checkMaterialAvailability,
   getBottleProductions,
-  recordWastage
+  recordWastage,
+  getBottleProductionCategories
 } from '../../../services/api/stock';
 
 export default function BottleProduction() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
-
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -24,6 +26,8 @@ export default function BottleProduction() {
   const [preformTypes, setPreformTypes] = useState([]);
   const [caps, setCaps] = useState([]);      // Full cap objects with _id
   const [labels, setLabels] = useState([]);  // Full label objects with _id
+  const [categories, setCategories] = useState([]); // Transformed categories for dropdown
+  const [selectedCategory, setSelectedCategory] = useState('');
 
   const [availability, setAvailability] = useState(null);
 
@@ -48,6 +52,7 @@ export default function BottleProduction() {
     boxesProduced: '',
     bottlesPerBox: '',
     bottleCategory: '',
+    bottleCategoryId: '', // Store category ID if needed
     labelId: '',  // Required - specific label ID
     capId: '',    // Required - specific cap ID
     remarks: '',
@@ -61,6 +66,20 @@ export default function BottleProduction() {
     quantityType2: '',  // Non-reusable / Scrap
     remarks: '',
   });
+
+  // Transform API categories to dropdown options
+  const transformCategoriesToOptions = (apiCategories) => {
+    if (!apiCategories || !Array.isArray(apiCategories)) return [];
+    
+    return apiCategories.map(category => ({
+      value: category.category, // Use category string as value
+      label: `${category.name} - ${category.category}`,
+      category: category.category,
+      name: category.name,
+      id: category._id,
+      originalData: category // Keep original if needed
+    }));
+  };
 
   // 🔹 Load Preform Types, Caps (with IDs), Labels (with IDs) on Mount
   useEffect(() => {
@@ -83,6 +102,34 @@ export default function BottleProduction() {
     }
     loadDropdowns();
     fetchAllProductionData();
+  }, []);
+
+  // 🔹 Load Bottle Categories Separately
+  useEffect(() => {
+    const loadBottleCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const categoriesRes = await getBottleProductionCategories();
+        
+        if (categoriesRes?.status && categoriesRes?.data) {
+          // Transform API data to dropdown format
+          const dropdownOptions = transformCategoriesToOptions(categoriesRes.data);
+          setCategories(dropdownOptions);
+          
+          // Optional: Log for debugging
+          console.log('Bottle Categories loaded:', dropdownOptions);
+        } else {
+          console.warn('No categories data received');
+        }
+      } catch (error) {
+        console.error('Failed to load bottle categories:', error);
+        setError('Failed to load bottle categories. Please refresh the page.');
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadBottleCategories();
   }, []);
 
   // 🔹 Fetch all bottle production data once from API
@@ -206,19 +253,19 @@ export default function BottleProduction() {
       setError('');
 
       const params = {
-  preformType: formData.preformType,
-  boxes: Number(formData.boxesProduced),
-  bottlesPerBox: Number(formData.bottlesPerBox),
-  bottleCategory: formData.bottleCategory
-};
+        preformType: formData.preformType,
+        boxes: Number(formData.boxesProduced),
+        bottlesPerBox: Number(formData.bottlesPerBox),
+        bottleCategory: formData.bottleCategory
+      };
 
-const res = await checkMaterialAvailability(params);
+      const res = await checkMaterialAvailability(params);
 
-if (res?.success) {
-  setAvailability(res.data || null);
-} else {
-  setAvailability(null);
-}
+      if (res?.success) {
+        setAvailability(res.data || null);
+      } else {
+        setAvailability(null);
+      }
 
     } catch (err) {
       console.error('Availability check failed:', err);
@@ -231,10 +278,24 @@ if (res?.success) {
   // 🔹 Input Handler
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'bottleCategory') {
+      // Find the selected category to get its ID
+      const selectedCat = categories.find(cat => cat.value === value);
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        bottleCategoryId: selectedCat?.id || '' // Store category ID
+      }));
+      
+      setSelectedCategory(value);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Wastage input handler
@@ -310,6 +371,7 @@ if (res?.success) {
         boxesProduced: '',
         bottlesPerBox: '',
         bottleCategory: '',
+        bottleCategoryId: '',
         labelId: '',
         capId: '',
         remarks: '',
@@ -370,19 +432,37 @@ if (res?.success) {
             </select>
           </div>
 
-          {/* Bottle Category */}
+          {/* 🔹 UPDATED: Bottle Category Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Bottle Category *
+              {loadingCategories && (
+                <span className="ml-2 text-xs text-gray-500">(Loading...)</span>
+              )}
             </label>
-            <input
-              type="text"
+            <select
               name="bottleCategory"
               value={formData.bottleCategory}
               onChange={handleInputChange}
-              placeholder="500ml"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              disabled={loadingCategories}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="">Select Bottle Category</option>
+              {categories.length > 0 ? (
+                categories.map((category) => (
+                  <option key={category.id} value={category.value}>
+                    {category.label}
+                  </option>
+                ))
+              ) : (
+                !loadingCategories && <option value="" disabled>No categories available</option>
+              )}
+            </select>
+            {loadingCategories && (
+              <div className="mt-1 text-xs text-blue-600">
+                Loading bottle categories...
+              </div>
+            )}
           </div>
 
           {/* Label Selector */}
@@ -671,7 +751,7 @@ if (res?.success) {
         <div className="mt-6 flex justify-end">
           <Button
             onClick={handleSubmit}
-            disabled={loading || checking || (availability && !availability.canProduce)}
+            disabled={loading || checking || loadingCategories || (availability && !availability.canProduce)}
             className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
             {loading ? 'Recording...' : 'Record Bottle Production'}
