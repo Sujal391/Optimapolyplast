@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../ui/button';
 import { Trash2 } from 'lucide-react';
 import ProductionList from './ProductionList';
+
+// 👉 API imports
 import {
   fetchRawMaterials,
   recordCapProduction,
   getCapProductions,
-  getCaps  // This import is correct
+  getCaps,  // ✅ This import is correct!
 } from '../../../services/api/stock';
 
 // Available cap colors
@@ -196,6 +198,20 @@ export default function CapProduction() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // ✅ Auto-select cap color when cap type changes
+    if (name === 'capId') {
+      const selectedCap = caps.find(cap => cap._id === value);
+
+      setFormData(prev => ({
+        ...prev,
+        capId: value,
+        capColor: selectedCap ? selectedCap.color : ''
+      }));
+
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -436,15 +452,16 @@ export default function CapProduction() {
               Cap Type *
             </label>
             <select
-              name="capId"  // Changed from capType to capId
+              name="capId"
               value={formData.capId}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">-- Select Cap Type --</option>
-              {getCapOptions().map((capOption, index) => (
-                <option key={index} value={capOption.value}>
-                  {capOption.label}
+
+              {caps.map((cap) => (
+                <option key={cap._id} value={cap._id}>
+                  {cap.size} ({cap.neckType}) - {cap.color}
                 </option>
               ))}
             </select>
@@ -460,7 +477,11 @@ export default function CapProduction() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cap Color *
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div
+              className={`flex flex-wrap gap-3 ${
+                formData.capId ? 'pointer-events-none opacity-70' : ''
+              }`}
+            >
               {CAP_COLORS.map((color) => (
                 <button
                   key={color.name}

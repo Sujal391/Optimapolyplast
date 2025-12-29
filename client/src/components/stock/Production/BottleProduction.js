@@ -23,17 +23,17 @@ export default function BottleProduction() {
   const [success, setSuccess] = useState('');
 
   // Dropdown data
-  const [preformTypes, setPreformTypes] = useState([]);
-  const [caps, setCaps] = useState([]);      // Full cap objects with _id
-  const [labels, setLabels] = useState([]);  // Full label objects with _id
-  const [categories, setCategories] = useState([]); // Transformed categories for dropdown
+  const [preformTypes, setPreformTypes] = useState([]); // Now contains objects with _id
+  const [caps, setCaps] = useState([]);
+  const [labels, setLabels] = useState([]);
+  const [categories, setCategories] = useState([]); // Categories with IDs
   const [selectedCategory, setSelectedCategory] = useState('');
 
   const [availability, setAvailability] = useState(null);
 
   // Production list state
-  const [allProductionData, setAllProductionData] = useState([]); // Full dataset
-  const [productionList, setProductionList] = useState([]); // Filtered/paginated data
+  const [allProductionData, setAllProductionData] = useState([]);
+  const [productionList, setProductionList] = useState([]);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState(null);
   const [pagination, setPagination] = useState(null);
@@ -48,51 +48,41 @@ export default function BottleProduction() {
   });
 
   const [formData, setFormData] = useState({
-    preformType: '',
-    boxesProduced: '',
-    bottlesPerBox: '',
-    bottleCategory: '',
-    bottleCategoryId: '', // Store category ID if needed
-    labelId: '',  // Required - specific label ID
-    capId: '',    // Required - specific cap ID
-    remarks: '',
-    productionDate: new Date().toISOString().split('T')[0],
-  });
+  preformTypeId: '', // For check-availability API
+  preformType: '',   // For record production API (the name like "500ml")
+  boxesProduced: '',
+  bottlesPerBox: '',
+  bottleCategoryId: '',
+  bottleCategoryName: '',
+  labelId: '',
+  capId: '',
+  remarks: '',
+  productionDate: new Date().toISOString().split('T')[0],
+});
 
-  // Wastage form state - updated API format
+  // Wastage form state
   const [wastageData, setWastageData] = useState({
     source: 'Bottle',
-    quantityType1: '',  // Reusable wastage
-    quantityType2: '',  // Non-reusable / Scrap
+    quantityType1: '',
+    quantityType2: '',
     remarks: '',
   });
 
-  // Transform API categories to dropdown options
-  const transformCategoriesToOptions = (apiCategories) => {
-    if (!apiCategories || !Array.isArray(apiCategories)) return [];
-    
-    return apiCategories.map(category => ({
-      value: category.category, // Use category string as value
-      label: `${category.name} - ${category.category}`,
-      category: category.category,
-      name: category.name,
-      id: category._id,
-      originalData: category // Keep original if needed
-    }));
-  };
-
-  // 🔹 Load Preform Types, Caps (with IDs), Labels (with IDs) on Mount
+  // 🔹 Load Preform Types, Caps, Labels on Mount
   useEffect(() => {
     async function loadDropdowns() {
       try {
+        // Fetch preform types with IDs
         const pf = await getAvailablePreformTypes();
+        console.log('📦 Preform Types API response:', pf);
+        console.log('📦 Preform Types data structure:', pf?.data?.[0]);
         setPreformTypes(pf?.data || []);
 
-        // Fetch full cap objects with _id
+        // Fetch caps
         const capsRes = await getCaps();
         setCaps(capsRes?.data || []);
 
-        // Fetch full label objects with _id
+        // Fetch labels
         const labelsRes = await getLabels();
         setLabels(labelsRes?.data || []);
 
@@ -104,7 +94,7 @@ export default function BottleProduction() {
     fetchAllProductionData();
   }, []);
 
-  // 🔹 Load Bottle Categories Separately
+  // 🔹 Load Bottle Categories
   useEffect(() => {
     const loadBottleCategories = async () => {
       setLoadingCategories(true);
@@ -112,12 +102,7 @@ export default function BottleProduction() {
         const categoriesRes = await getBottleProductionCategories();
         
         if (categoriesRes?.status && categoriesRes?.data) {
-          // Transform API data to dropdown format
-          const dropdownOptions = transformCategoriesToOptions(categoriesRes.data);
-          setCategories(dropdownOptions);
-          
-          // Optional: Log for debugging
-          console.log('Bottle Categories loaded:', dropdownOptions);
+          setCategories(categoriesRes.data || []);
         } else {
           console.warn('No categories data received');
         }
@@ -132,7 +117,7 @@ export default function BottleProduction() {
     loadBottleCategories();
   }, []);
 
-  // 🔹 Fetch all bottle production data once from API
+  // 🔹 Fetch all bottle production data
   const fetchAllProductionData = async () => {
     setListLoading(true);
     setListError(null);
@@ -151,14 +136,12 @@ export default function BottleProduction() {
   const applyLocalFilters = (data, filters) => {
     let filtered = [...data];
 
-    // Filter by bottleCategory
     if (filters.bottleCategory) {
       filtered = filtered.filter(item =>
         item.bottleCategory?.toLowerCase().includes(filters.bottleCategory.toLowerCase())
       );
     }
 
-    // Filter by date range
     if (filters.startDate) {
       const startDate = new Date(filters.startDate);
       filtered = filtered.filter(item => new Date(item.productionDate) >= startDate);
@@ -169,7 +152,6 @@ export default function BottleProduction() {
       filtered = filtered.filter(item => new Date(item.productionDate) <= endDate);
     }
 
-    // Sort
     const sortBy = filters.sortBy || 'productionDate';
     const sortOrder = filters.sortOrder || 'desc';
     filtered.sort((a, b) => {
@@ -190,7 +172,6 @@ export default function BottleProduction() {
       return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
 
-    // Calculate pagination
     const totalRecords = filtered.length;
     const totalPages = Math.ceil(totalRecords / filters.limit) || 1;
     const currentPage = Math.min(filters.page, totalPages);
@@ -208,95 +189,155 @@ export default function BottleProduction() {
     setProductionList(paginatedData);
   };
 
-  // Effect to apply filters when data or filters change
   useEffect(() => {
     if (allProductionData.length > 0) {
       applyLocalFilters(allProductionData, listFilters);
     }
   }, [allProductionData, listFilters]);
 
-  // Local filter change - no API call
+  // Local filter change
   const handleFilterChange = (key, value) => {
     setListFilters(prev => ({ ...prev, [key]: value, page: 1 }));
   };
 
-  // Local page change - no API call
+  // Local page change
   const handlePageChange = (page) => {
     setListFilters(prev => ({ ...prev, page }));
   };
 
-  // Local sort change - no API call
+  // Local sort change
   const handleSortChange = (sortBy, sortOrder) => {
     setListFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
   };
 
   // 🔹 Auto Check Availability when form fields change
   useEffect(() => {
-    autoCheckAvailability();
-  }, [formData.preformType, formData.boxesProduced, formData.bottlesPerBox, formData.bottleCategory]);
+  autoCheckAvailability();
+}, [formData.preformTypeId, formData.boxesProduced, formData.bottlesPerBox, 
+    formData.bottleCategoryId, formData.labelId, formData.capId]);
 
-  // 🔹 INTEGRATION: Check /production/check-availability
-  const autoCheckAvailability = async () => {
-    // Reset availability if any required field is missing
-    if (
-      !formData.preformType ||
-      !formData.boxesProduced ||
-      !formData.bottlesPerBox ||
-      !formData.bottleCategory
-    ) {
-      setAvailability(null);
-      return;
-    }
+  // 🔹 UPDATED: Check availability with IDs
+const autoCheckAvailability = async () => {
+  // Check if all required fields are filled
+  const requiredFields = [
+    formData.preformTypeId,
+    formData.boxesProduced,
+    formData.bottlesPerBox,
+    formData.bottleCategoryId,
+    formData.labelId,
+    formData.capId
+  ];
 
-    try {
-      setChecking(true);
-      setError('');
+  if (requiredFields.some(field => !field)) {
+    console.log('Missing form data, cannot check availability');
+    console.log('Missing fields:', {
+      preformTypeId: !formData.preformTypeId,
+      boxesProduced: !formData.boxesProduced,
+      bottlesPerBox: !formData.bottlesPerBox,
+      bottleCategoryId: !formData.bottleCategoryId,
+      labelId: !formData.labelId,
+      capId: !formData.capId
+    });
+    setAvailability(null);
+    return;
+  }
 
-      const params = {
-        preformType: formData.preformType,
-        boxes: Number(formData.boxesProduced),
-        bottlesPerBox: Number(formData.bottlesPerBox),
-        bottleCategory: formData.bottleCategory
-      };
+  try {
+    setChecking(true);
+    setError('');
 
-      const res = await checkMaterialAvailability(params);
+    const params = {
+      preformTypeId: formData.preformTypeId,
+      boxes: Number(formData.boxesProduced),
+      bottlesPerBox: Number(formData.bottlesPerBox),
+      bottleCategoryId: formData.bottleCategoryId,
+      labelId: formData.labelId,
+      capId: formData.capId
+    };
 
-      if (res?.success) {
-        setAvailability(res.data || null);
-      } else {
-        setAvailability(null);
-      }
-
-    } catch (err) {
-      console.error('Availability check failed:', err);
-      setAvailability(null);
-    } finally {
-      setChecking(false);
-    }
-  };
-
-  // 🔹 Input Handler
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    console.log('📤 Sending availability check with params:', params);
+    console.log('📤 API endpoint: POST stock/production/check-availability');
     
-    if (name === 'bottleCategory') {
-      // Find the selected category to get its ID
-      const selectedCat = categories.find(cat => cat.value === value);
-      
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        bottleCategoryId: selectedCat?.id || '' // Store category ID
-      }));
-      
-      setSelectedCategory(value);
+    const res = await checkMaterialAvailability(params);
+
+    console.log('✅ Availability check response:', res);
+
+    if (res?.success) {
+      setAvailability(res.data || null);
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      setAvailability(null);
+      console.warn('Availability check returned without success:', res);
     }
-  };
+
+  } catch (err) {
+    console.error('❌ Availability check failed:', err);
+    
+    if (err.response) {
+      console.error('Error response status:', err.response.status);
+      console.error('Error response data:', err.response.data);
+      
+      // More specific error handling
+      if (err.response.status === 400) {
+        console.error('400 Bad Request - Likely missing or invalid parameters');
+        console.error('Expected parameters:', [
+          'preformTypeId',
+          'boxes',
+          'bottlesPerBox',
+          'bottleCategoryId',
+          'labelId',
+          'capId'
+        ]);
+        
+        setError(`Validation error: ${err.response.data?.message || 'Missing required parameters'}`);
+      } else if (err.response.status === 404) {
+        setError('API endpoint not found. Please check the backend server.');
+      } else {
+        setError(`Server error: ${err.response.status}`);
+      }
+    } else if (err.request) {
+      console.error('No response received:', err.request);
+      setError('No response from server. Please check your connection.');
+    } else {
+      console.error('Request setup error:', err.message);
+      setError(`Request error: ${err.message}`);
+    }
+    
+    setAvailability(null);
+  } finally {
+    setChecking(false);
+  }
+};
+
+  // 🔹 Input Handler - Updated for IDs
+  const handleInputChange = (e) => {
+  const { name, value } = e.target;
+  
+  if (name === 'preformTypeId') {
+    // Find the selected preform to get both ID and type name
+    const selectedPreform = preformTypes.find(p => p.preformTypeId === value);
+    
+    setFormData(prev => ({
+      ...prev,
+      preformTypeId: value,              // ObjectId for check-availability
+      preformType: selectedPreform?.type || ''  // Type name for record production
+    }));
+  } else if (name === 'bottleCategoryId') {
+    const selectedCat = categories.find(cat => cat._id === value);
+    
+    setFormData(prev => ({
+      ...prev,
+      bottleCategoryId: value,
+      bottleCategoryName: selectedCat?.name || ''
+    }));
+    
+    setSelectedCategory(value);
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }
+};
 
   // Wastage input handler
   const handleWastageChange = (e) => {
@@ -307,24 +348,19 @@ export default function BottleProduction() {
     }));
   };
 
-  // 🔹 Submit Handler (POST /production/bottle)
+  // 🔹 UPDATED: Submit Handler with new payload format
   const handleSubmit = async () => {
     setError('');
     setSuccess('');
 
-    // Validate required fields including labelId and capId
-    if (!formData.preformType || !formData.boxesProduced || !formData.bottlesPerBox || !formData.bottleCategory) {
-      setError("Preform type, boxes produced, bottles per box, and bottle category are required");
-      return;
-    }
-
-    if (!formData.labelId) {
-      setError("Please select a Label");
-      return;
-    }
-
-    if (!formData.capId) {
-      setError("Please select a Cap");
+    // Validate required fields
+    if (!formData.preformTypeId || 
+        !formData.boxesProduced || 
+        !formData.bottlesPerBox || 
+        !formData.bottleCategoryId ||
+        !formData.labelId ||
+        !formData.capId) {
+      setError("All fields marked with * are required");
       return;
     }
 
@@ -336,21 +372,22 @@ export default function BottleProduction() {
     try {
       setLoading(true);
 
+      // UPDATED payload structure
       const payload = {
-        preformType: formData.preformType,
-        boxesProduced: Number(formData.boxesProduced),
-        bottlesPerBox: Number(formData.bottlesPerBox),
-        bottleCategory: formData.bottleCategory,
-        labelId: formData.labelId,    // Required
-        capId: formData.capId,        // Required
-        remarks: formData.remarks,
-        productionDate: formData.productionDate,
-      };
+      preformType: formData.preformType,  // ✅ Send "500ml" (the type name)
+      bottleCategoryId: formData.bottleCategoryId,
+      boxesProduced: Number(formData.boxesProduced),
+      bottlesPerBox: Number(formData.bottlesPerBox),
+      labelId: formData.labelId,
+      capId: formData.capId,
+      remarks: formData.remarks,
+      productionDate: formData.productionDate,
+    };
 
       // Step 1: Record production
       await recordBottleProduction(payload);
 
-      // Step 2: Record wastage if wastage details provided (using new API format)
+      // Step 2: Record wastage if applicable
       const hasWastage = wastageData.quantityType1 || wastageData.quantityType2;
       if (hasWastage) {
         const wastagePayload = {
@@ -367,16 +404,17 @@ export default function BottleProduction() {
 
       // Reset forms
       setFormData({
-        preformType: '',
-        boxesProduced: '',
-        bottlesPerBox: '',
-        bottleCategory: '',
-        bottleCategoryId: '',
-        labelId: '',
-        capId: '',
-        remarks: '',
-        productionDate: new Date().toISOString().split('T')[0],
-      });
+  preformTypeId: '',
+  preformType: '',     // ✅ Add this
+  boxesProduced: '',
+  bottlesPerBox: '',
+  bottleCategoryId: '',
+  bottleCategoryName: '',
+  labelId: '',
+  capId: '',
+  remarks: '',
+  productionDate: new Date().toISOString().split('T')[0],
+});
 
       setWastageData({
         source: 'Bottle',
@@ -386,7 +424,7 @@ export default function BottleProduction() {
       });
 
       setAvailability(null);
-      fetchAllProductionData(); // Refresh data after successful submission
+      fetchAllProductionData(); // Refresh data
 
     } catch (err) {
       const msg = err?.response?.data?.message || err.message || "Failed to record bottle production";
@@ -414,25 +452,27 @@ export default function BottleProduction() {
         <h3 className="text-xl font-semibold text-gray-800 mb-4">Record Bottle Production</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Preform Dropdown */}
+          {/* UPDATED: Preform Dropdown - now uses ID */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Preform Type *
             </label>
             <select
-              name="preformType"
-              value={formData.preformType}
+              name="preformTypeId"
+              value={formData.preformTypeId}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select Preform</option>
-              {preformTypes.map((p, idx) => (
-                <option key={idx} value={p.type}>{p.type}</option>
+              {preformTypes.map((p) => (
+                <option key={p.preformTypeId} value={p.preformTypeId}>
+                  {p.type} (Available: {p.totalAvailable})
+                </option>
               ))}
             </select>
           </div>
 
-          {/* 🔹 UPDATED: Bottle Category Dropdown */}
+          {/* UPDATED: Bottle Category Dropdown - now uses ID */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Bottle Category *
@@ -441,8 +481,8 @@ export default function BottleProduction() {
               )}
             </label>
             <select
-              name="bottleCategory"
-              value={formData.bottleCategory}
+              name="bottleCategoryId"
+              value={formData.bottleCategoryId}
               onChange={handleInputChange}
               disabled={loadingCategories}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
@@ -450,17 +490,17 @@ export default function BottleProduction() {
               <option value="">Select Bottle Category</option>
               {categories.length > 0 ? (
                 categories.map((category) => (
-                  <option key={category.id} value={category.value}>
-                    {category.label}
+                  <option key={category._id} value={category._id}>
+                    {category.name} - {category.category}
                   </option>
                 ))
               ) : (
                 !loadingCategories && <option value="" disabled>No categories available</option>
               )}
             </select>
-            {loadingCategories && (
-              <div className="mt-1 text-xs text-blue-600">
-                Loading bottle categories...
+            {formData.bottleCategoryName && (
+              <div className="mt-1 text-xs text-gray-600">
+                Selected: {formData.bottleCategoryName}
               </div>
             )}
           </div>
@@ -479,7 +519,7 @@ export default function BottleProduction() {
               <option value="">Select Label</option>
               {labels.map((label) => (
                 <option key={label._id} value={label._id}>
-                  {label.bottleName} - {label.bottleCategory} (Available: {label.quantityAvailable})
+                  {label.bottleName} - {label.bottleCategory}
                 </option>
               ))}
             </select>
@@ -499,7 +539,7 @@ export default function BottleProduction() {
               <option value="">Select Cap</option>
               {caps.map((cap) => (
                 <option key={cap._id} value={cap._id}>
-                  {cap.neckType} - {cap.size} - {cap.color} (Available: {cap.quantityAvailable})
+                  {cap.neckType} - {cap.size} - {cap.color}
                 </option>
               ))}
             </select>
@@ -567,7 +607,7 @@ export default function BottleProduction() {
           </div>
         </div>
 
-        {/* AVAILABILITY STATUS - Enhanced Display */}
+        {/* AVAILABILITY STATUS */}
         {checking && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center">
@@ -696,7 +736,7 @@ export default function BottleProduction() {
           </div>
         )}
 
-        {/* Wastage Details Section - Updated API format */}
+        {/* Wastage Details Section */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h4 className="text-lg font-semibold text-gray-800 mb-4">Wastage Details (Optional)</h4>
           <p className="text-sm text-gray-500 mb-4">At least one wastage type must have a value to record wastage.</p>
@@ -768,8 +808,8 @@ export default function BottleProduction() {
           error={listError}
           pagination={pagination}
           columns={[
-            { key: 'preformType', label: 'Preform Type', render: (row) => row.preformType || 'N/A' },
-            { key: 'bottleCategory', label: 'Bottle Category', render: (row) => row.bottleCategory || 'N/A' },
+            { key: 'preformType', label: 'Preform Type', render: (row) => row.preformType?.type || 'N/A' },
+            { key: 'bottleCategory', label: 'Bottle Category', render: (row) => row.bottleCategory?.name || 'N/A' },
             { key: 'boxesProduced', label: 'Boxes Produced', render: (row) => row.boxesProduced || 0 },
             { key: 'bottlesPerBox', label: 'Bottles/Box', render: (row) => row.bottlesPerBox || 0 },
             { key: 'totalBottles', label: 'Total Bottles', render: (row) => row.details?.totalBottles || (row.boxesProduced * row.bottlesPerBox) || 0 },

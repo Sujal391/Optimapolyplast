@@ -507,7 +507,8 @@ export const getBottleProductionCategories = async (params = {}) => {
  */
 export const checkMaterialAvailability = async (params) => {
   try {
-    const response = await apiClient.get('stock/production/check-availability', { params });
+    // Remove the extra { params } wrapper - send params directly
+    const response = await apiClient.post('stock/production/check-availability', params);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
