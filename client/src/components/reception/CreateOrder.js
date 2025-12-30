@@ -1049,7 +1049,62 @@ const ProductSelection = ({
             }}
             className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {/* Price input kept commented as in original */}
+          {/* Price customization - only for Miscellaneous panel users */}
+          {state.isMiscellaneous && (
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Custom Price (₹)"
+              value={state.selectedProducts[product._id]?.customPrice ?? ""}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                const inputValue = e.target.value;
+                const customPrice = inputValue === "" ? null : parseFloat(inputValue);
+
+                if (customPrice !== null && customPrice < 0) {
+                  toast.error(`Price for ${product.name} cannot be negative.`);
+                  return;
+                }
+
+                // Update local state
+                dispatch({
+                  type: "SET_FIELD",
+                  field: "selectedProducts",
+                  value: {
+                    ...state.selectedProducts,
+                    [product._id]: {
+                      ...product,
+                      ...state.selectedProducts[product._id],
+                      customPrice: customPrice,
+                      price: customPrice !== null ? customPrice : product.price,
+                    },
+                  },
+                });
+              }}
+              onBlur={async (e) => {
+                // Call API on blur to avoid calling on every keystroke
+                const customPrice = state.selectedProducts[product._id]?.customPrice;
+                if (customPrice !== null && customPrice !== undefined && !isNaN(customPrice)) {
+                  try {
+                    await api.post("/reception/user-panel/products/price-add", {
+                      productId: product._id,
+                      price: customPrice,
+                    });
+                    toast.success(`Price updated for ${product.name}`);
+                  } catch (error) {
+                    console.error("Error updating product price:", error);
+                    toast.error(
+                      error.response?.data?.error ||
+                        `Failed to update price for ${product.name}`
+                    );
+                  }
+                }
+              }}
+              className="border p-2 rounded w-full mt-2 focus:outline-none focus:ring-2 focus:ring-green-500 bg-green-50"
+            />
+          )}
         </div>
       ))}
     </div>

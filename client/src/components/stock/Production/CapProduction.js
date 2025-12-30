@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../../ui/button';
 import { Trash2 } from 'lucide-react';
 import ProductionList from './ProductionList';
+
+// 👉 API imports
 import {
   fetchRawMaterials,
   recordCapProduction,
   getCapProductions,
-  getCaps  // ADD THIS IMPORT
+  getCaps,  // ✅ This import is correct!
 } from '../../../services/api/stock';
 
 // Available cap colors
@@ -25,7 +27,7 @@ const CAP_COLORS = [
 
 export default function CapProduction() {
   const [materials, setMaterials] = useState([]);
-  const [caps, setCaps] = useState([]);  // ADD THIS STATE
+  const [caps, setCaps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -49,10 +51,10 @@ export default function CapProduction() {
     sortOrder: 'desc'
   });
 
-  // Form state
+  // Form state - CHANGED: capType is now capId
   const [formData, setFormData] = useState({
     rawMaterials: [],
-    capType: '',
+    capId: '',  // Changed from capType to capId
     capColor: '',
     quantityProduced: '',
     boxesUsed: '',
@@ -72,7 +74,7 @@ export default function CapProduction() {
   // Fetch materials, caps, and production data on mount
   useEffect(() => {
     fetchMaterials();
-    fetchCaps();  // ADD THIS CALL
+    fetchCaps();
     fetchAllProductionData();
   }, []);
 
@@ -89,14 +91,12 @@ export default function CapProduction() {
     }
   };
 
-  // ADD THIS FUNCTION
   const fetchCaps = async () => {
     try {
       const res = await getCaps();
       setCaps(res.caps || res.data || []);
     } catch (err) {
       console.error('Error fetching caps:', err);
-      // Don't set error state here to avoid disrupting the form
     }
   };
 
@@ -198,6 +198,20 @@ export default function CapProduction() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+
+    // ✅ Auto-select cap color when cap type changes
+    if (name === 'capId') {
+      const selectedCap = caps.find(cap => cap._id === value);
+
+      setFormData(prev => ({
+        ...prev,
+        capId: value,
+        capColor: selectedCap ? selectedCap.color : ''
+      }));
+
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -252,7 +266,8 @@ export default function CapProduction() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.capType || !formData.capColor || !formData.quantityProduced || formData.rawMaterials.length === 0) {
+    // CHANGED: Validation now checks for capId instead of capType
+    if (!formData.capId || !formData.capColor || !formData.quantityProduced || formData.rawMaterials.length === 0) {
       setError('Cap Type, Cap Color, Quantity Produced, and at least one Raw Material are required');
       return;
     }
@@ -264,17 +279,18 @@ export default function CapProduction() {
       setLoading(true);
       setError('');
 
+      // CHANGED: Updated payload structure according to API
       const payload = {
         rawMaterials: formData.rawMaterials.map(m => ({
           materialId: m.materialId,
           quantityUsed: m.quantityUsed,
         })),
-        capType: formData.capType,
+        capId: formData.capId,  // Changed from capType to capId
         capColor: formData.capColor,
         quantityProduced: parseInt(formData.quantityProduced, 10),
         boxesUsed: formData.boxesUsed ? parseInt(formData.boxesUsed, 10) : 0,
         bagsUsed: formData.bagsUsed ? parseInt(formData.bagsUsed, 10) : 0,
-        remarks: formData.remarks,
+        remarks: formData.remarks || '',
         productionDate: new Date(formData.productionDate).toISOString(),
       };
 
@@ -289,9 +305,10 @@ export default function CapProduction() {
 
       setSuccess('Production & Wastage Recorded Successfully!');
 
+      // Reset form
       setFormData({
         rawMaterials: [],
-        capType: '',
+        capId: '',  // Changed from capType to capId
         capColor: '',
         quantityProduced: '',
         boxesUsed: '',
@@ -318,27 +335,24 @@ export default function CapProduction() {
     return type1 + type2;
   };
 
-  // ADD THIS HELPER FUNCTION to generate unique cap options
-  const getUniqueCapTypes = () => {
-    const uniqueTypes = new Map();
+  // UPDATED: Get cap options with proper values
+  const getCapOptions = () => {
+    if (!caps.length) return [];
     
-    caps.forEach(cap => {
-      // Create a unique key combining neckType and size
-      const key = `${cap.neckType || ''}-${cap.size || ''}`;
-      const label = cap.size 
-        ? `${cap.size}${cap.neckType ? ` (${cap.neckType})` : ''}`
-        : cap.neckType || 'Unknown';
-      
-      if (!uniqueTypes.has(key)) {
-        uniqueTypes.set(key, {
-          value: cap.size || cap.neckType || '',
-          label: label,
-          cap: cap
-        });
-      }
-    });
-    
-    return Array.from(uniqueTypes.values());
+    return caps.map(cap => ({
+      value: cap._id,  // Use cap._id for capId
+      label: cap.size ? `${cap.size} (${cap.neckType || 'N/A'})` : cap.neckType || 'Unknown',
+      capType: cap.neckType, // Store cap type for display
+      size: cap.size // Store size for display
+    }));
+  };
+
+  // Helper to get selected cap display name
+  const getSelectedCapDisplay = () => {
+    if (!formData.capId) return '';
+    const selectedCap = caps.find(cap => cap._id === formData.capId);
+    if (!selectedCap) return '';
+    return selectedCap.size ? `${selectedCap.size} (${selectedCap.neckType || 'N/A'})` : selectedCap.neckType || 'Unknown';
   };
 
   return (
@@ -432,24 +446,30 @@ export default function CapProduction() {
 
         {/* Production Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* REPLACE THE CAP TYPE INPUT WITH THIS SELECT DROPDOWN */}
+          {/* UPDATED: Cap Type Selector - now uses capId */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Cap Type *
             </label>
             <select
-              name="capType"
-              value={formData.capType}
+              name="capId"
+              value={formData.capId}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             >
               <option value="">-- Select Cap Type --</option>
-              {getUniqueCapTypes().map((capOption, index) => (
-                <option key={index} value={capOption.value}>
-                  {capOption.label}
+
+              {caps.map((cap) => (
+                <option key={cap._id} value={cap._id}>
+                  {cap.size} ({cap.neckType}) - {cap.color}
                 </option>
               ))}
             </select>
+            {formData.capId && (
+              <p className="mt-1 text-sm text-gray-600">
+                Selected: <span className="font-semibold">{getSelectedCapDisplay()}</span>
+              </p>
+            )}
           </div>
 
           {/* Cap Color Selector */}
@@ -457,7 +477,11 @@ export default function CapProduction() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Cap Color *
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div
+              className={`flex flex-wrap gap-3 ${
+                formData.capId ? 'pointer-events-none opacity-70' : ''
+              }`}
+            >
               {CAP_COLORS.map((color) => (
                 <button
                   key={color.name}
@@ -646,7 +670,7 @@ export default function CapProduction() {
         </div>
       </div>
 
-      {/* Production List */}
+      {/* Production List - No changes needed here */}
       <div className="mt-8">
         <ProductionList
           title="Cap Production History"

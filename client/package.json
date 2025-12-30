@@ -13,8 +13,10 @@
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
     "@radix-ui/react-alert-dialog": "^1.1.14",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
     "axios": "^1.8.3",
     "cra-template": "1.2.0",
     "exceljs": "^4.4.0",
@@ -42,7 +44,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "CI=false react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

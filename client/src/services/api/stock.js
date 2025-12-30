@@ -216,6 +216,14 @@ export const getPreformProductions = async (params = {}) => {
   }
 };
 
+export const getPreformProductionById = async (id) => {
+  try {
+    const response = await apiClient.get(`stock/production/preform/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
 
 // <-----------------------CAP MANAGEMENT APIs-------------------->
 
@@ -481,12 +489,26 @@ export const getCapProductions = async (params = {}) => {
 };
 
 /**
+ * Fetch bottle production categories for selection/dropdown
+ * Used to populate bottle category selection fields
+ */
+export const getBottleProductionCategories = async (params = {}) => {
+  try {
+    const response = await apiClient.get('stock/production/bottle/category', { params });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
+/**
  * Check Material Availability for Bottle Production
  * GET /production/check-availability
  */
 export const checkMaterialAvailability = async (params) => {
   try {
-    const response = await apiClient.get('stock/production/check-availability', { params });
+    // Remove the extra { params } wrapper - send params directly
+    const response = await apiClient.post('stock/production/check-availability', params);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
